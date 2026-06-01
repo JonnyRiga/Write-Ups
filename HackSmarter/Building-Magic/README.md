@@ -60,13 +60,13 @@ id  username         full_name                   role            password
 
 | id | username | password | valid? |
 |----|----------|----------|--------|
-| 1 | r.widdleton | lilronron | ✅ Valid |
-| 9 | t.ren | shadowhex7 | ❌ Invalid |
+| 1 | r.widdleton | REDACTED | ✅ Valid |
+| 9 | t.ren | REDACTED | ❌ Invalid |
 
 Validate with NetExec:
 
 ```bash
-nxc smb buildingmagic.local -u 'r.widdleton' -p 'lilronron' --shares
+nxc smb buildingmagic.local -u 'r.widdleton' -p 'REDACTED' --shares
 ```
 
 ```
