@@ -136,9 +136,13 @@ nxc ldap dc01.hack.smarter -u 'bob.ross' -p '137Password123!@#' --bloodhound --c
 
 **Key finding:** `bob.ross` has **GenericAll** over `alice.wonderland`.
 
+![BloodHound — bob.ross GenericAll over alice.wonderland](screenshots/bloodhound-genericall.png)
+
 GenericAll grants full control over an object — including the ability to **change their password without knowing the current one**.
 
 `alice.wonderland` is a member of the **Remote Management Users** group, meaning she can connect via WinRM.
+
+![alice.wonderland — Remote Management Users group](screenshots/alice-remote-mgmt-group.png)
 
 ---
 
@@ -358,6 +362,8 @@ evil-winrm -u hacksmarter -p Hack12345 -i dc01.hack.smarter
 ```bash
 *Evil-WinRM* PS C:\Users\administrator\desktop> type root.txt
 ```
+
+![Root flag](screenshots/root-flag.png)
 
 ---
 
