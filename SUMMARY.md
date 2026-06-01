@@ -1,6 +1,6 @@
 # Summary
 
-* [About Jhaxx](README.md)
+* [Writeups](README.md)
 
 ## Hack Smarter Labs
 
