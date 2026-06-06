@@ -530,8 +530,6 @@ xfreerdp /v:<DC_IP> /u:anna_molly \
   /cert:ignore
 ```
 
-![Full RDP session as anna_molly (Domain Admin)](screenshots/rdp-domain-admin.png)
-
 ---
 
 ## Root Flag
