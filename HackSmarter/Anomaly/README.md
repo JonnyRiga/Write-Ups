@@ -540,7 +540,7 @@ xfreerdp /v:10.0.20.248 /u:anna_molly \
 type C:\Users\Administrator\Desktop\root.txt
 ```
 
-![Root flag](screenshots/root-flag.png)
+![Full RDP session — root flag on Administrator desktop](screenshots/rdp-domain-admin.png)
 
 ---
 
