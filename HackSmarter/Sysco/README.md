@@ -340,7 +340,7 @@ putty.exe
 
 Reading the `.lnk` file with `type` in PowerShell reveals embedded plaintext credentials:
 
-![PuTTY .lnk file — plaintext credentials](screenshots/putty-lnk-creds.png)
+![PuTTY .lnk file — plaintext credentials](screenshots/sysadmin-redacted.png)
 
 `sysadmin` = `greg.shields` (System Administrator per AD description).
 
