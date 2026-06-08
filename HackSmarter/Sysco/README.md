@@ -230,6 +230,8 @@ Bloodhound data collection completed in 0M 27S
 
 Members of this group can modify group policy for the domain. Compromising `greg.shields` leads directly to Domain Admin.
 
+![BloodHound — jack.dowland no outbound control](screenshots/bloodhound-jack-dowland.png)
+
 ![BloodHound — greg.shields Group Policy Creator Owners](screenshots/bloodhound-greg-shields.png)
 
 ---
@@ -306,6 +308,8 @@ RDP in as `lainey.moore:Chocolate1`.
 
 ![User flag on lainey.moore desktop](screenshots/user-flag.png)
 
+![User flag](screenshots/user-flag-2.png)
+
 ---
 
 ## RDP Enumeration — Finding `greg.shields` Credentials
@@ -364,6 +368,8 @@ SMB  DC01  [+] SYSCO.LOCAL\greg.shields:5y5coSmarter2025!!!
 
 BloodHound confirms `greg.shields` is a member of **Group Policy Creator Owners**, giving full control over GPOs in the domain. With GenericAll over the **Default Domain Policy** GPO, we can inject an Immediate Scheduled Task that executes as SYSTEM.
 
+![BloodHound — greg.shields in Group Policy Creator Owners](screenshots/bloodhound-gpo-group.png)
+
 ![BloodHound — greg.shields GenericAll over Default Domain Policy](screenshots/bloodhound-gpo-genericall.png)
 
 > "With full control of a GPO, you may make modifications to that GPO which will then apply to the users and computers affected by the GPO."
@@ -396,6 +402,10 @@ Id               : 6ac1786c-016f-11d2-945f-00c04fb984f9
 ```
 
 Cross-reference GUIDs against BloodHound to identify which GPO `greg.shields` has GenericAll over.
+
+Cross-reference GUIDs against BloodHound to identify which GPO `greg.shields` has GenericAll over:
+
+![BloodHound — GPO ID cross-reference](screenshots/bloodhound-gpo-id.png)
 
 **Target GPO ID:** `31b2f340-016d-11d2-945f-00c04fb984f9`
 
@@ -434,7 +444,11 @@ Removes the Immediate-Task XML from the GPO and rolls back the GPO version. The 
 
 ## Root Flag
 
-Launch PowerShell as Administrator, navigate to the Administrator desktop:
+Launch PowerShell as Administrator:
+
+![PowerShell as Administrator](screenshots/powershell-as-admin.png)
+
+Navigate to the Administrator desktop:
 
 ```powershell
 type C:\Users\Administrator\Desktop\root.txt
