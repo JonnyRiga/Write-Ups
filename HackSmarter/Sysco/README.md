@@ -304,11 +304,11 @@ sudo apt install remmina remmina-plugin-rdp
 
 RDP in as `lainey.moore:REDACTED`.
 
+![Remmina UI with lainey.moore credentials](screenshots/user-flag.png)
+
 ### User Flag
 
-![User flag on lainey.moore desktop](screenshots/user-flag.png)
-
-![User flag](screenshots/user-flag-2.png)
+![User flag](screenshots/redacted_user_flag.png)
 
 ---
 
