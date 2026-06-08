@@ -10,9 +10,9 @@ The OSCP is the target. Everything else is prep.
 
 ## Platforms
 
-| Platform | Description |
-|----------|-------------|
-| [Hack Smarter](./HackSmarter/) | Hack Smarter Security labs — OSCP-aligned AD and infrastructure challenges |
+| Platform | Boxes | Description |
+|----------|-------|-------------|
+| [Hack Smarter](./HackSmarter/) | Share The Pain, Building Magic, Anomaly, Sysco | OSCP-aligned AD and infrastructure challenges |
 
 ---
 
