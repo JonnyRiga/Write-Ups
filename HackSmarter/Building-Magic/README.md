@@ -56,7 +56,7 @@ id  username         full_name                   role            password
 
 ### Cracked Hashes
 
-![CrackStation results](screenshots/crackstation-magic2.png)
+![CrackStation results](screenshots/crackstation-results2.png)
 
 | id | username | password | valid? |
 |----|----------|----------|--------|
