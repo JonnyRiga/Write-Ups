@@ -177,9 +177,7 @@ Notable: `CertEnroll` share is readable — confirms the CA.
 
 ---
 
-## Authenticated Enumeration
-
-### BloodHound Collection
+## Domain Enumeration — BloodHound
 
 ```bash
 nxc ldap dc01.shadow.gate -u jtrueblood -p 'REDACTED' \
