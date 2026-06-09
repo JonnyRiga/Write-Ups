@@ -69,11 +69,11 @@ Key findings:
 - **Port 3389:** RDP open externally
 - **SSL issuer:** `shadow-DC01-CA` — an internal Certificate Authority is present
 
-![Nmap — IIS web features](screenshots/nmap-iis-webfeatures.png)
-
 ---
 
 ## HTTP Enumeration (Port 80)
+
+![Nmap — IIS web features](screenshots/nmap-iis-webfeatures.png)
 
 ### Dirsearch
 
