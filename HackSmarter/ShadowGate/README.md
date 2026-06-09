@@ -200,6 +200,8 @@ GenericWrite allows writing arbitrary attributes — most usefully, setting an S
 
 With GenericWrite over `bbrown`, temporarily assign an SPN to make the account Kerberoastable, then request and crack the TGS ticket.
 
+**Why this works:** When a Kerberos SPN is registered on an account, the KDC will issue a TGS ticket for that service encrypted with the **account's NT hash**. The requester never interacts with the account's password directly — they just ask the KDC for a ticket, and the KDC obliges. GenericWrite allows writing arbitrary LDAP attributes, including `servicePrincipalName`, so the attacker registers a fake SPN on `bbrown`, requests the TGS, receives a blob encrypted with bbrown's hash, then cracks it offline. `targetedKerberoast` automates the SPN write, ticket request, and cleanup in one shot.
+
 **Tool:** [`targetedKerberoast`](https://github.com/ShutdownRepo/targetedKerberoast)
 
 ```bash
@@ -313,7 +315,9 @@ A certificate for `DC01.shadow.gate` (the machine account) is now in `./DC01.sha
 
 ## PKINIT — Obtaining DC01$ NT Hash
 
-Use the certificate to authenticate as DC01$ and retrieve its NT hash via PKINIT (Kerberos certificate authentication):
+Use the certificate to authenticate as DC01$ and retrieve its NT hash via PKINIT (Kerberos certificate authentication).
+
+**Why this works:** When a client authenticates with a certificate over PKINIT, the KDC still needs to support legacy NTLM-based services that require the account's NT hash. To enable this, the KDC embeds the NT hash inside the encrypted AS-REP response (the "PKINIT Unpac-the-Hash" technique). `certipy auth` decrypts that response using the certificate's private key and extracts the NT hash — no password brute-forcing, no lateral movement, just a protocol design artifact that trades convenience for security.
 
 ```bash
 certipy auth -pfx DC01.shadow.gate.pfx -dc-ip <DC_IP>
