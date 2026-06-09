@@ -143,7 +143,7 @@ root@ip-10-0-18-224:/var/lib/jenkins#
 
 ```bash
 root@ip-10-0-18-224:/var/lib/jenkins# cat /root/user.txt
-ZmxhZ3toMWRkM25fcjRuZDBtXzl4N3BRen0=
+'REDACTED'
 ```
 
 ---
