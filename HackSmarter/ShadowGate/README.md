@@ -69,6 +69,8 @@ Key findings:
 - **Port 3389:** RDP open externally
 - **SSL issuer:** `shadow-DC01-CA` — an internal Certificate Authority is present
 
+![Nmap — IIS web features](screenshots/nmap-iis-webfeatures.png)
+
 ---
 
 ## HTTP Enumeration (Port 80)
@@ -81,6 +83,10 @@ Key findings:
 ```
 
 Key finding: `/certsrv/` returns **401 Unauthorized** — AD Certificate Services (AD CS) web enrollment is deployed on the DC itself. The 401 means NTLM authentication is in use over HTTP (not HTTPS), which is the precondition for ESC8.
+
+![Dirsearch — /certsrv/ discovered](screenshots/dirsearch-certsrv.png)
+
+![AD CS web enrollment exposure](screenshots/adcs-certsrv-exposure.png)
 
 ---
 
@@ -97,6 +103,8 @@ nxc smb <DC_IP> -u "" -p ""
 ```
 
 Null session permitted. Share access denied, guest account disabled. RID brute-force blocked.
+
+![SMB null session test](screenshots/smb-null-session.png)
 
 ### User Enumeration (Null Session)
 
@@ -120,6 +128,8 @@ tclarke
 jbradford
 amoss
 ```
+
+![SMB user enumeration — 12 accounts](screenshots/smb-user-enum.png)
 
 ---
 
@@ -146,6 +156,8 @@ $krb5asrep$23$jtrueblood@SHADOW.GATE:...:REDACTED
 ```
 
 **Credentials: `jtrueblood:REDACTED`**
+
+![AS-REP Roast — jtrueblood hash cracked](screenshots/asreproast-jtrueblood.png)
 
 ### Verify
 
@@ -184,7 +196,7 @@ Bloodhound data collection completed in 0M 30S
 
 GenericWrite allows writing arbitrary attributes — most usefully, setting an SPN on the target account, enabling a **targeted Kerberoast** without requiring any special privilege.
 
-![BloodHound — jtrueblood GenericWrite over bbrown](screenshots/bloodhound-jtrueblood-genericwrite.png)
+![BloodHound — jtrueblood GenericWrite over bbrown](screenshots/bloodhound-genericwrite-bbrown.png)
 
 ---
 
@@ -217,6 +229,10 @@ $krb5tgs$23$*bbrown$...:REDACTED
 ### BloodHound — `bbrown` Membership
 
 `bbrown` is a member of **Certificate Service DCOM Access** — permitted to connect to Certification Authorities in the enterprise. This account has the entitlements to enumerate and interact with AD CS.
+
+![BloodHound — bbrown in Certificate Service DCOM Access](screenshots/bloodhound-bbrown-dcom-group.png)
+
+![BloodHound — DCOM group description](screenshots/bloodhound-dcom-description.png)
 
 ---
 
