@@ -10,3 +10,4 @@ OSCP-aligned penetration testing labs from [Hack Smarter Security](https://hacks
 | [Building Magic](./Building-Magic/) | Easy | Hash Cracking, Kerberoasting, ForcePasswordChange, NTLM Theft, SeBackupPrivilege, Pass-the-Hash |
 | [Anomaly](./Anomaly/) | Medium | Jenkins Default Credentials, Groovy RCE, Sudo Injection, Kerberos Keytab, ADCS ESC1, MachineAccountQuota, Pass-the-Hash |
 | [Sysco](./Sysco/) | Medium | ASREPRoasting, Cisco IOS Hash Cracking, Password Spraying, Roundcube Webmail, GPO Abuse (GenericAll), pyGPOAbuse |
+| [ShadowGate](./ShadowGate/) | Medium | ASREPRoasting, Targeted Kerberoasting, AD CS ESC8, NTLM Relay (PetitPotam), PKINIT, DCSync |
