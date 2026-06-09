@@ -84,8 +84,6 @@ Key findings:
 
 Key finding: `/certsrv/` returns **401 Unauthorized** — AD Certificate Services (AD CS) web enrollment is deployed on the DC itself. The 401 means NTLM authentication is in use over HTTP (not HTTPS), which is the precondition for ESC8.
 
-![Dirsearch — /certsrv/ discovered](screenshots/dirsearch-certsrv.png)
-
 ![AD CS web enrollment exposure](screenshots/adcs-certsrv-exposure.png)
 
 ---
