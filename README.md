@@ -16,4 +16,4 @@ The OSCP is the target. Everything else is prep.
 
 ---
 
-*More platforms coming soon (HTB, VHL, etc.)*
+*More platforms coming soon (HTB)*
