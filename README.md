@@ -12,7 +12,7 @@ The OSCP is the target. Everything else is prep.
 
 | Platform | Boxes | Description |
 |----------|-------|-------------|
-| [Hack Smarter](./HackSmarter/) | Share The Pain, Building Magic, Anomaly, Sysco | OSCP-aligned AD and infrastructure challenges |
+| [Hack Smarter](./HackSmarter/) | Share The Pain, Building Magic, Anomaly, Sysco, ShadowGate | OSCP-aligned AD and infrastructure challenges |
 
 ---
 
