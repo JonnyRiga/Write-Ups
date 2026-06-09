@@ -263,6 +263,8 @@ Certificate Authorities: 1
 
 ## ESC8 Exploitation — NTLM Relay via PetitPotam
 
+> **Reference:** [Certipy Wiki — ESC8: NTLM Relay to AD CS Web Enrollment](https://github.com/ly4k/Certipy/wiki/06-%E2%80%90-Privilege-Escalation#esc8-ntlm-relay-to-ad-cs-web-enrollment)
+
 ### Step 1 — Start the Relay Listener
 
 ```bash
