@@ -12,7 +12,7 @@ ShadowGate simulates a post-acquisition internal penetration test against an Act
 
 **Attack Path:**
 ```
-Nmap → IIS + AD CS (/certsrv) detected
+rustscan → IIS on DC + internal CA (shadow-DC01-CA) detected
 → SMB null session → 12 domain users enumerated
 → ASREPRoast jtrueblood (no creds required)
 → Hashcat (cracked) → Authenticated enumeration
@@ -37,7 +37,11 @@ Nmap → IIS + AD CS (/certsrv) detected
 
 ## Service Enumeration
 
-### Nmap
+### rustscan
+
+```bash
+rustscan -a <DC_IP> -- -sC -sV -Pn
+```
 
 ```
 PORT      STATE    SERVICE           REASON          VERSION
@@ -97,27 +101,24 @@ Key findings:
 - **Domain:** `shadow.gate`
 - **Hostname:** `DC01.shadow.gate`
 - **OS:** Windows Server 2022 (Build 20348)
-- **Port 80:** IIS 10.0 — unusual for a DC, worth enumerating
-- **Port 3389:** RDP open externally
-- **SSL issuer:** `shadow-DC01-CA` — an internal Certificate Authority is present
+- **Port 80:** IIS 10.0 — not installed on a DC by default, worth enumerating
+- **SSL issuer:** `shadow-DC01-CA` on ports 389, 636, 3269 — an internal CA is running directly on this DC
 
 ### Reading the Signals
 
-Three findings from the Nmap output, each telling you something on its own — and more together:
+Two findings from the scan, each telling you something — and more together:
 
-**Port 80 — IIS on a DC:** Windows doesn't put IIS on a DC by default. Something was deliberately installed. Worth enumerating immediately.
+**Port 80 — IIS on a DC:** Windows doesn't put IIS on a DC by default. Something was deliberately installed here. Enumerate it immediately.
 
-**`/certsrv/` returning 401 (HTTP):** That path is the AD CS web enrollment interface — it only exists if AD CS is installed with the Web Enrollment role enabled. The 401 means NTLM authentication is in use over HTTP (not HTTPS). NTLM over HTTP is relayable; HTTPS would require channel binding and break the attack. HTTP makes ESC8 trivial.
+**SSL issuer `shadow-DC01-CA` on ports 389, 636, and 3269:** Every LDAP and global catalogue port carries a cert issued by `shadow-DC01-CA`. The DC is its own CA — AD CS is running on this machine, not on a separate server somewhere else on the network.
 
-**SSL issuer `shadow-DC01-CA` on LDAP:** The cert on port 636 was issued by an internal CA, and the DC is that CA. Combined with `/certsrv/`, this isn't AD CS running somewhere else on the network — it's running on the DC itself.
-
-**Together:** IIS → enumerate. `/certsrv/` 401 over HTTP → AD CS web enrollment, NTLM relayable → ESC8 candidate. LDAP cert issuer → CA confirmed on the DC. The HTTP (not HTTPS) on `/certsrv/` is the key signal — it means ESC8 is on the table before you even have credentials.
+**Together:** IIS on a CA-hosting DC is the ESC8 setup. The only open question is whether the web enrollment endpoint is exposed and running over HTTP rather than HTTPS. That's what enumerating port 80 answers.
 
 ---
 
 ## HTTP Enumeration (Port 80)
 
-![Nmap — IIS web features](screenshots/nmap-iis-webfeatures.png)
+![IIS on DC01 — port 80 response](screenshots/nmap-iis-webfeatures.png)
 
 ### Dirsearch
 
@@ -126,9 +127,9 @@ Three findings from the Nmap output, each telling you something on its own — a
 401  /certsrv/
 ```
 
-Key finding: `/certsrv/` returns **401 Unauthorized** — AD Certificate Services (AD CS) web enrollment is deployed on the DC itself. The 401 means NTLM authentication is in use over HTTP (not HTTPS), which is the precondition for ESC8.
+`/certsrv/` returns **401 Unauthorized** — this path is the AD CS Web Enrollment interface and only exists if AD CS is installed with the Web Enrollment role enabled. The 401 confirms NTLM authentication is in use over plain HTTP, not HTTPS. NTLM over HTTP is relayable — HTTPS would enforce channel binding and prevent the relay entirely. This is the ESC8 precondition confirmed.
 
-![AD CS web enrollment exposure](screenshots/adcs-certsrv-exposure.png)
+![AD CS web enrollment — /certsrv/ over HTTP](screenshots/adcs-certsrv-exposure.png)
 
 ---
 
@@ -453,8 +454,8 @@ krbtgt NT hash: REDACTED
 
 | Step | Technique | Tool |
 |------|-----------|------|
-| Service enumeration | Nmap full scan — IIS + AD CS detected | `nmap` |
-| User enumeration | SMB null session RID cycling | `nxc` |
+| Service enumeration | rustscan full scan — IIS + internal CA detected | `rustscan` |
+| User enumeration | SMB null session SAMR enumeration (`--users`) | `nxc` |
 | Initial access | AS-REP Roast → offline crack | `nxc`, `Hashcat` |
 | Domain enumeration | BloodHound ACL collection | `nxc`, `BloodHound` |
 | Lateral movement | GenericWrite → Targeted Kerberoast `bbrown` → crack | `targetedKerberoast`, `Hashcat` |
