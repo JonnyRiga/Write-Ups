@@ -226,7 +226,7 @@ $krb5tgs$23$*bbrown$...:REDACTED
 
 ### BloodHound — `bbrown` Membership
 
-`bbrown` is a member of **Certificate Service DCOM Access** — permitted to connect to Certification Authorities in the enterprise. This account has the entitlements to enumerate and interact with AD CS.
+`bbrown` is a member of **Certificate Service DCOM Access** — a useful BloodHound signal that confirms CA interaction rights, though ESC8 coercion only requires any valid domain account.
 
 ![BloodHound — bbrown in Certificate Service DCOM Access](screenshots/bloodhound-bbrown-dcom-group.png)
 
