@@ -69,6 +69,18 @@ Key findings:
 - **Port 3389:** RDP open externally
 - **SSL issuer:** `shadow-DC01-CA` — an internal Certificate Authority is present
 
+### Reading the Signals
+
+Three findings from the Nmap output, each telling you something on its own — and more together:
+
+**Port 80 — IIS on a DC:** Windows doesn't put IIS on a DC by default. Something was deliberately installed. Worth enumerating immediately.
+
+**`/certsrv/` returning 401 (HTTP):** That path is the AD CS web enrollment interface — it only exists if AD CS is installed with the Web Enrollment role enabled. The 401 means NTLM authentication is in use over HTTP (not HTTPS). NTLM over HTTP is relayable; HTTPS would require channel binding and break the attack. HTTP makes ESC8 trivial.
+
+**SSL issuer `shadow-DC01-CA` on LDAP:** The cert on port 636 was issued by an internal CA, and the DC is that CA. Combined with `/certsrv/`, this isn't AD CS running somewhere else on the network — it's running on the DC itself.
+
+**Together:** IIS → enumerate. `/certsrv/` 401 over HTTP → AD CS web enrollment, NTLM relayable → ESC8 candidate. LDAP cert issuer → CA confirmed on the DC. The HTTP (not HTTPS) on `/certsrv/` is the key signal — it means ESC8 is on the table before you even have credentials.
+
 ---
 
 ## HTTP Enumeration (Port 80)
