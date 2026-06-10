@@ -40,25 +40,57 @@ Nmap → IIS + AD CS (/certsrv) detected
 ### Nmap
 
 ```
-PORT      STATE SERVICE           VERSION
-53/tcp    open  domain            Simple DNS Plus
-80/tcp    open  http              Microsoft-IIS/10.0
-88/tcp    open  kerberos-sec      Microsoft Windows Kerberos
-139/tcp   open  netbios-ssn?
-389/tcp   open  tcpwrapped
-445/tcp   open  microsoft-ds?
-636/tcp   open  tcpwrapped
-3269/tcp  open  globalcatLDAPssl?
-3389/tcp  open  ms-wbt-server     Microsoft Terminal Services
-| rdp-ntlm-info:
+PORT      STATE    SERVICE           REASON          VERSION
+53/tcp open  domain       Simple DNS Plus
+80/tcp    open     tcpwrapped        syn-ack ttl 126
+| http-methods: 
+|_  Potentially risky methods: TRACE
+|_http-server-header: Microsoft-IIS/10.0
+|_http-title: IIS Windows Server
+
+88/tcp open  kerberos-sec Microsoft Windows Kerberos (server time: 2026-06-09 13:43:12Z)
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
+
+135/tcp   filtered msrpc             no-response
+139/tcp   open     netbios-ssn?      syn-ack ttl 126
+389/tcp   open     tcpwrapped        syn-ack ttl 126
+| ssl-cert: Subject: commonName=DC01.shadow.gate
+| Subject Alternative Name: othername: 1.3.6.1.4.1.311.25.1:<unsupported>, DNS:DC01.shadow.gate
+| Issuer: commonName=shadow-DC01-CA/domainComponent=shadow
+
+445/tcp   open     microsoft-ds?     syn-ack ttl 126
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:window
+
+636/tcp   open     tcpwrapped        syn-ack ttl 126
+| ssl-cert: Subject: commonName=DC01.shadow.gate
+| Subject Alternative Name: othername: 1.3.6.1.4.1.311.25.1:<unsupported>, DNS:DC01.shadow.gate
+| Issuer: commonName=shadow-DC01-CA/domainComponent=shadow
+|_ssl-date: TLS randomness does not represent time
+
+3269/tcp  open     globalcatLDAPssl? syn-ack ttl 126
+| ssl-cert: Subject: commonName=DC01.shadow.gate
+| Subject Alternative Name: othername: 1.3.6.1.4.1.311.25.1:<unsupported>, DNS:DC01.shadow.gate
+| Issuer: commonName=shadow-DC01-CA/domainComponent=shadow
+
+3389/tcp open  ms-wbt-server Microsoft Terminal Services
+| rdp-enum-encryption: 
+|   Security layer
+|     CredSSP (NLA): SUCCESS
+|     CredSSP with Early User Auth: SUCCESS
+|_    RDSTLS: SUCCESS
+| ssl-cert: Subject: commonName=DC01.shadow.gate
+| Not valid before: 2026-01-11T02:45:29
+|_Not valid after:  2026-07-13T02:45:29
+|_ssl-date: 2026-06-09T12:52:40+00:00; -1s from scanner time.
+| rdp-ntlm-info: 
 |   Target_Name: SHADOW
 |   NetBIOS_Domain_Name: SHADOW
 |   NetBIOS_Computer_Name: DC01
 |   DNS_Domain_Name: shadow.gate
 |   DNS_Computer_Name: DC01.shadow.gate
 |   Product_Version: 10.0.20348
-
-SSL cert issuer: commonName=shadow-DC01-CA/domainComponent=shadow
+|_  System_Time: 2026-06-09T12:52:07+00:00
+Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 ```
 
 Key findings:
