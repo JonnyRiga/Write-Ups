@@ -251,7 +251,9 @@ Certificate Authorities: 1
     ESC8: Web Enrollment is enabled over HTTP
 ```
 
-**ESC8 confirmed.** Web enrollment is enabled over plain HTTP with NTLM authentication — credentials sent to `/certsrv/` are relayable because there is no channel binding or HTTPS requirement. We can:
+**ESC8 confirmed.** ESC8 is an AD CS misconfiguration where the web enrollment endpoint (`certfnsh.asp`) accepts NTLM authentication over HTTP. Because NTLM is relayable (no signing enforcement on HTTP), an attacker can relay any incoming NTLM authentication directly to this endpoint. If the relayed account is a domain computer account (e.g. DC01$), the attacker can request a DomainController certificate on its behalf — which can then be used to obtain a TGT via PKINIT, followed by a DCSync to dump all domain hashes.
+
+Web enrollment is enabled over plain HTTP with no channel binding, so we can:
 
 1. Coerce DC01$ into authenticating to our listener via MS-EFSRPC (PetitPotam)
 2. Relay that NTLM auth to `/certsrv/certfnsh.asp`
