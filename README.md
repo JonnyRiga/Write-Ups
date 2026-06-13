@@ -12,8 +12,5 @@ The OSCP is the target. Everything else is prep.
 
 | Platform | Boxes | Description |
 |----------|-------|-------------|
+| [HackTheBox](./HackTheBox/) | Cicada, Silentium | Retired HTB machines — web, AD, Linux privesc |
 | [Hack Smarter](./HackSmarter/) | Share The Pain, Building Magic, Anomaly, Sysco, ShadowGate | OSCP-aligned AD and infrastructure challenges |
-
----
-
-*More platforms coming soon (HTB)*
