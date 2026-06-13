@@ -2,6 +2,11 @@
 
 * [Writeups](README.md)
 
+## Hack The Box
+
+* [Overview](HackTheBox/README.md)
+* [Cicada](HackTheBox/Cicada/README.md)
+
 ## Hack Smarter Labs
 
 * [Overview](HackSmarter/README.md)
