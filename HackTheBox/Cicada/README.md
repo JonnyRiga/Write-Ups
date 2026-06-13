@@ -189,6 +189,8 @@ nxc ldap CICADA-DC.cicada.htb -u michael.wrightson -p '<DEFAULT_PASSWORD>' --blo
 
 Load the resulting `.zip` into BloodHound and run the pre-built queries. The graph shows a few outbound object control rights but no direct attack paths for `michael.wrightson`.
 
+![BloodHound — michael.wrightson outbound object control](screenshots/bloodhound-michael-outbound.png)
+
 ### ADCS — Ruled Out
 
 The nmap SSL certificate issuer tipped us off to an internal CA. Check for vulnerable certificate templates:
@@ -330,6 +332,8 @@ SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
 `SeBackupPrivilege` is enabled — and this is significant. Windows grants this privilege so that backup software can read any file on the system regardless of permissions. We can exploit that: the `SAM` and `SYSTEM` registry hives contain local account password hashes, and normally only SYSTEM can read them. With `SeBackupPrivilege`, we bypass that restriction entirely.
 
 BloodHound confirms it: `emily.oscars` is a member of the **Backup Operators** built-in group, which is what grants these privileges.
+
+![BloodHound — emily.oscars member of Backup Operators](screenshots/bloodhound-emily-backupoperators.png)
 
 ### Dumping the SAM and SYSTEM Hives
 
