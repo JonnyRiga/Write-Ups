@@ -14,15 +14,6 @@ The target is `cicada.htb` (`CICADA-DC.cicada.htb`), a Windows Server 2022 Domai
 
 ---
 
-<details>
-<summary>Summary</summary>
-
-Nmap identifies a Windows Domain Controller exposing SMB, LDAP, Kerberos, and WinRM. Guest SMB access is permitted and reveals a readable `HR` share containing an onboarding notice with the domain's default password (`Cicada$M6Corpb*@Lp#nZp!8`). RID brute-forcing via guest enumerates five domain users. A password spray against those users hits `michael.wrightson`, who never rotated the default. BloodHound collection via LDAP reveals no direct attack paths and ADCS enumeration confirms the internal CA is not published — ruling out certificate-based attacks. Enumerating user attributes with `--users` surfaces `david.orelious`'s password stored verbatim in his AD description field (`aRt$Lp#7t*VQ!3`), granting READ access to the previously locked `DEV` share. Inside `DEV`, `Backup_script.ps1` hardcodes credentials for `emily.oscars` (`Q!3@Lp#M6b*7t*Vt`), who is a member of the Backup Operators group and in Remote Management Users. An Evil-WinRM shell as `emily.oscars` confirms `SeBackupPrivilege` is enabled. We use `reg save` to dump the `SAM` and `SYSTEM` hives, extract the Administrator NT hash (`2b87e7c93a3e8a0ea4a581937016f341`) offline with `secretsdump`, and Pass-the-Hash into a fully privileged administrator shell.
-
-</details>
-
----
-
 ## Recon
 
 ### Nmap
@@ -432,17 +423,6 @@ Full domain compromise. Root flag on the Administrator's desktop.
 > nxc smb <DC_IP> -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt' -M backup_operator
 > ```
 > Requires the same Backup Operators membership. Replaces the manual `reg save` + download steps.
-
----
-
-## Credentials Summary
-
-| Account | Credential | Source |
-|---|---|---|
-| `michael.wrightson` | `Cicada$M6Corpb*@Lp#nZp!8` | Default password — HR share onboarding notice |
-| `david.orelious` | `aRt$Lp#7t*VQ!3` | Plaintext in AD description field |
-| `emily.oscars` | `Q!3@Lp#M6b*7t*Vt` | Hardcoded in `Backup_script.ps1` on DEV share |
-| `Administrator` | `2b87e7c93a3e8a0ea4a581937016f341` (NT) | SAM hive dump via SeBackupPrivilege |
 
 ---
 

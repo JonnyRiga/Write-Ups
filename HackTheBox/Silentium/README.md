@@ -14,15 +14,6 @@ The target is `silentium.htb`, a Linux host presenting a corporate web front-end
 
 ---
 
-<details>
-<summary>Summary</summary>
-
-Service enumeration against `silentium.htb` exposes nginx on port 80 and OpenSSH on port 22. Virtual host fuzzing uncovers a staging portal at `staging.silentium.htb` backed by a Flowise AI instance. The password reset flow leaks the admin user's full JSON record — including a `tempToken` — directly in the HTTP response body, constituting a critical IDOR/information disclosure. We use the `tempToken` to reset the `ben` account's password, authenticate to Flowise as admin, extract the API key, and chain CVE-2025-58434 + CVE-2025-59528 (unauthenticated account takeover → CustomMCP remote code execution) to land a reverse shell as `root` inside the Flowise Docker container. Inspecting the container's environment variables leaks credentials for the host's `ben` account (`r04D!!_R4ge`), allowing lateral movement via SSH to the underlying Ubuntu host. Internal enumeration — aided by `privy.sh` — surfaces a Gogs git service running as `root` on port 3001. SSH local port forwarding exposes the Gogs UI; we register an account, then exploit CVE-2025-8110 (authenticated arbitrary file-write → RCE) with a modified PoC to spawn a root shell on the host.
-
-</details>
-
----
-
 ## Recon
 
 ### Nmap
@@ -275,17 +266,6 @@ root
 ```
 
 We are `root` on the host. The root flag is at `/root/root.txt`.
-
----
-
-## Credentials Summary
-
-| Account | Credential | Source |
-|---|---|---|
-| `ben@silentium.htb` | `Password123#` | Set via password reset (tempToken) |
-| `ben` (SSH) | `r04D!!_R4ge` | Docker env — `SMTP_PASSWORD` |
-| `pwuser` (Gogs) | `Password123!` | Manually registered |
-| `admin` (Flowise) | `$2a$05$6o1ngPj...` (bcrypt) | Leaked in password reset response |
 
 ---
 
