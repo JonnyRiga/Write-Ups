@@ -416,7 +416,7 @@ cicada\administrator
 
 Full domain compromise. Root flag on the Administrator's desktop.
 
-!(screenshots/congrats.png)
+![](screenshots/congrats.png)
 
 > **Alternative — NetExec `backup_operator` module:** Automates the hive extraction without dropping into a shell first:
 > ```bash
