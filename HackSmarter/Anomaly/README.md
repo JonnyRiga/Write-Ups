@@ -1,6 +1,6 @@
 # Anomaly
 
-![cover](./screenshots/cover.png)
+![](./screenshots/cover.png)
 
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  

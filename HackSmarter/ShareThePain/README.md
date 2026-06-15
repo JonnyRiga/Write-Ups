@@ -1,6 +1,6 @@
 # Share The Pain
 
-![cover](./screenshots/cover.jpeg)
+![](./screenshots/cover.jpeg)
 
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
