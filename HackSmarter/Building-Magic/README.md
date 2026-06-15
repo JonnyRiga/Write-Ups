@@ -1,5 +1,7 @@
 # Building Magic
 
+![](./screenshots/cover.jpg)
+
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Easy  
 **Topics:** Active Directory, Hash Cracking, Kerberoasting, ForcePasswordChange, NTLM Theft, SeBackupPrivilege, Pass-the-Hash
