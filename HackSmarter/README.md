@@ -11,3 +11,4 @@ OSCP-aligned penetration testing labs from [Hack Smarter Security](https://hacks
 | [Anomaly](./Anomaly/) | Medium | Jenkins Default Credentials, Groovy RCE, Sudo Injection, Kerberos Keytab, ADCS ESC1, MachineAccountQuota, Pass-the-Hash |
 | [Sysco](./Sysco/) | Medium | ASREPRoasting, Cisco IOS Hash Cracking, Password Spraying, Roundcube Webmail, GPO Abuse (GenericAll), pyGPOAbuse |
 | [ShadowGate](./ShadowGate/) | Medium | ASREPRoasting, Targeted Kerberoasting, AD CS ESC8, NTLM Relay (PetitPotam), PKINIT, DCSync |
+| [Samurai](./Samurai/) | Easy | CVE-2023-23752, Joomla Information Disclosure, Webshell, Sliver C2, Sudo Command Injection |
