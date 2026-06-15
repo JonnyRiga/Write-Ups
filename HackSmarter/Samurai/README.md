@@ -2,6 +2,8 @@
 
 # Samurai
 
+![Samurai](../.gitbook/assets/samurai_cover.png)
+
 **Hack Smarter Labs — by jhaxx**
 
 ---
