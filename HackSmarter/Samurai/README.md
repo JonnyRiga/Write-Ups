@@ -4,7 +4,7 @@
 
 ![Samurai](../.gitbook/assets/samurai_cover.png)
 
-**Hack Smarter Labs — by jhaxx**
+**Machine Write-up — by jhaxx**
 
 ---
 
