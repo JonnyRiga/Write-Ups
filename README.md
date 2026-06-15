@@ -1,5 +1,7 @@
 # Write-Ups
 
+![header](./assets/header.png)
+
 Hi, I'm Jhaxx.
 
 I'm on a self-directed path into offensive security, working toward the OSCP by way of homelabs and CTFs. My background is in sales and IT support, which means I came to this late and starting from scratch — and loving every second of it!
