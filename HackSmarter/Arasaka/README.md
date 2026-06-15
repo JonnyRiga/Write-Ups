@@ -1,20 +1,15 @@
 `[ACTIVE DIRECTORY]` `[BLOODHOUND]` `[KERBEROASTING]` `[GENERICALL]` `[GENERICWRITE]` `[TARGETED KERBEROASTING]` `[ADCS]` `[ESC1]` `[PKINIT]` `[PASS-THE-HASH]`
 
-# Arasaka
-
 ![](../.gitbook/assets/arasaka_cover.png)
 
 **HackSmarter Lab — by jhaxx**
 
 ---
 
-| Field | Value |
-|---|---|
-| Target IP | `10.0.23.214` |
-| Hostname | `DC01.hacksmarter.local` |
-| Operating System | Windows Server 2022 Build 20348 |
-| Difficulty | Medium |
-| Attacker IP | `10.200.64.220` (tun0) |
+**Platform:** Hack Smarter Labs  
+**Difficulty:** Medium  
+**Topics:** Active Directory, BloodHound, Kerberoasting, GenericAll, GenericWrite, Targeted Kerberoasting, ADCS, ESC1, PKINIT, Pass-The-Hash
+**Operating System:** Windows Server 2022 Build 20348
 
 ---
 
