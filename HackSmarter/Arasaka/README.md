@@ -35,7 +35,7 @@ Beginning with the assumed-breach credential for `faraday`, we collect all AD ob
 ### Nmap
 
 ```bash
-nmap -sC -sV -Pn 10.0.23.214
+rustscan -b 500 -a <DC-IP> --top-ports -- -sC -sV -Pn
 ```
 
 ```
