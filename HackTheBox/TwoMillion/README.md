@@ -4,8 +4,6 @@
 
 ![TwoMillion](../.gitbook/assets/twomillion_cover.png)
 
-**HackTheBox Easy — by jhaxx**
-
 ---
 
 | Field | Value |
