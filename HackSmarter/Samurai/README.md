@@ -1,7 +1,5 @@
 `[CVE-2023-23752]` `[INFORMATION DISCLOSURE]` `[JOOMLA]` `[WEBSHELL]` `[SLIVER C2]` `[COMMAND INJECTION]` `[SUDO ABUSE]`
 
-# Samurai
-
 ![Samurai](../.gitbook/assets/samurai_cover.png)
 
 **Machine Write-up — by jhaxx**
