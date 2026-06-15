@@ -359,7 +359,6 @@ certipy account -u 'Soulkiller.svc' -p '<PASSWORD REDACTED>' -dc-ip 10.0.23.214 
     userPrincipalName                   : the_emperor@hacksmarter.local
 ```
 
-> 💡 **Author's Note:** The notes truncate the `certipy account` subcommand to `rea`, which is not a valid Certipy subcommand. The correct subcommand is `read`, which queries LDAP and returns the account's full attribute set including its SID. The walkthrough above reflects the corrected invocation.
 
 #### Step 3 — Request a Certificate Impersonating `the_emperor`
 
