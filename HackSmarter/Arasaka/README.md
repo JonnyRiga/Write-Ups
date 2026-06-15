@@ -2,7 +2,7 @@
 
 ![](../.gitbook/assets/arasaka_cover.png)
 
-**Machine Write-Up by jhaxx**
+**Machine Write-Up — by jhaxx**
 
 ---
 
