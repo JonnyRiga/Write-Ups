@@ -2,7 +2,7 @@
 
 # Cicada
 
-![](../.gitbook/assets/cicada_cover.jpg)
+![](../.gitbook/assets/cicada_cover.png)
 
 **HackTheBox Easy — by jhaxx**
 
