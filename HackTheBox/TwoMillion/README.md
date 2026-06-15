@@ -1,8 +1,10 @@
 `[JS DEOBFUSCATION]` `[API ABUSE]` `[IDOR]` `[COMMAND INJECTION]` `[CREDENTIAL REUSE]` `[CVE-2023-0386]` `[CVE-2023-4911]`
 
-# TwoMillion — HackTheBox Write-up by Jhaxx
+---
 
 ![TwoMillion](../.gitbook/assets/twomillion_cover.png)
+
+**Machine Write-up — by jhaxx**
 
 ---
 
