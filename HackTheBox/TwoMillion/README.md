@@ -4,7 +4,7 @@
 
 ![TwoMillion](../.gitbook/assets/twomillion_cover.png)
 
-**Machine Write-up — by jhaxx**
+**Machine Write-Up — by jhaxx**
 
 ---
 
