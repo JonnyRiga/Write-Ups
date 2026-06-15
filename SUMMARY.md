@@ -17,3 +17,4 @@
 * [Anomaly](HackSmarter/Anomaly/README.md)
 * [Sysco](HackSmarter/Sysco/README.md)
 * [ShadowGate](HackSmarter/ShadowGate/README.md)
+* [Samurai](HackSmarter/Samurai/README.md)
