@@ -2,6 +2,8 @@
 
 # TwoMillion
 
+![TwoMillion Cover](screenshots/twomillion_cover.png)
+
 **HackTheBox Easy — by jhaxx**
 
 ---
