@@ -4,7 +4,7 @@
 
 ![](../.gitbook/assets/cicada_cover.png)
 
-**HackTheBox Easy — by jhaxx**
+**Machine Write-Up — by jhaxx**
 
 ---
 
