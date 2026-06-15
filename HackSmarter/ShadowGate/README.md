@@ -1,5 +1,7 @@
 # ShadowGate
 
+![cover](./screenshots/cover.png)
+
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
 **Topics:** AS-REP Roasting, Targeted Kerberoasting, AD CS ESC8, NTLM Relay (PetitPotam), PKINIT, DCSync
