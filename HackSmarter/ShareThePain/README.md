@@ -1,5 +1,7 @@
 # Share The Pain
 
+![cover](./screenshots/cover.jpeg)
+
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
 **Topics:** Active Directory, NTLMv2 Hash Capture, GenericAll Abuse, MSSQL, SOCKS Proxy, SeImpersonatePrivilege, GodPotato

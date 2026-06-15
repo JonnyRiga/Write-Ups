@@ -1,5 +1,7 @@
 # Sysco
 
+![cover](./screenshots/cover.png)
+
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
 **Topics:** ASREPRoasting, Cisco IOS Hash Cracking, Password Spraying, Roundcube Webmail, BloodHound, Evil-WinRM, RDP Enumeration, PuTTY LNK Credential Recovery, GPO Abuse (GenericAll), pyGPOAbuse

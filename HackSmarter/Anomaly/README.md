@@ -1,5 +1,7 @@
 # Anomaly
 
+![cover](./screenshots/cover.png)
+
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
 **Topics:** Jenkins Default Credentials, Groovy Script Console RCE, Sudo Command Injection, Kerberos Keytab, ADCS ESC1, MachineAccountQuota, Pass-the-Hash, RDP Restricted Admin
