@@ -4,7 +4,7 @@
 
 ![Samurai](../.gitbook/assets/samurai_cover.png)
 
-**Machine Write-up — by jhaxx**
+**Machine Write-Up — by jhaxx**
 
 ---
 
