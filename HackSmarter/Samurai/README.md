@@ -2,7 +2,7 @@
 
 ---
 
-![Samurai](../.gitbook/assets/samurai_cover.png)
+![](../.gitbook/assets/samurai_cover.png)
 
 **Machine Write-Up — by jhaxx**
 
