@@ -9,7 +9,6 @@
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
 **Topics:** Active Directory, BloodHound, Kerberoasting, GenericAll, GenericWrite, Targeted Kerberoasting, ADCS, ESC1, PKINIT, Pass-The-Hash
-
 **Operating System:** Windows Server 2022 Build 20348
 
 ---
