@@ -2,7 +2,7 @@
 
 ![](../.gitbook/assets/arasaka_cover.png)
 
-**HackSmarter Lab — by jhaxx**
+**Machine Write-Up by jhaxx**
 
 ---
 
