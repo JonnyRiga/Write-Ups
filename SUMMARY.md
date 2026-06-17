@@ -18,3 +18,4 @@
 * [ShadowGate](HackSmarter/ShadowGate/README.md)
 * [Samurai](HackSmarter/Samurai/README.md)
 * [Arasaka](HackSmarter/Arasaka/README.md)
+* [Verbose](HackSmarter/Verbose/README.md)
