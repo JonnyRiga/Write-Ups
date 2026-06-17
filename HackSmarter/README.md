@@ -13,3 +13,4 @@ OSCP-aligned penetration testing labs from [Hack Smarter Security](https://hacks
 | [ShadowGate](./ShadowGate/) | Medium | ASREPRoasting, Targeted Kerberoasting, AD CS ESC8, NTLM Relay (PetitPotam), PKINIT, DCSync |
 | [Samurai](./Samurai/) | Easy | CVE-2023-23752, Joomla Information Disclosure, Webshell, Sliver C2, Sudo Command Injection |
 | [Arasaka](./Arasaka/) | Medium | Kerberoasting, GenericAll, GenericWrite, Targeted Kerberoasting, ADCS ESC1, PKINIT, Pass-the-Hash |
+| [Verbose](./Verbose/) | Easy | Username Enumeration, Broken Access Control, MFA Brute-Force, SSTI (Jinja2), RCE |
