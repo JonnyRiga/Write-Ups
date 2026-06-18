@@ -4,8 +4,6 @@
 
 ![](<../.gitbook/assets/verbose_cover.png>)
 
-**Machine Write-Up — by jhaxx**
-
 ---
 
 **Platform:** Hack Smarter Labs
