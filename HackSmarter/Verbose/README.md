@@ -230,9 +230,9 @@ root@ip-10-1-32-50:/home/ubuntu# whoami
 root
 ```
 
-![Root shell — full RCE via Jinja2 SSTI](<../.gitbook/assets/verbose_root_shell.png>)
-
 The application process runs as `root`. The root flag is at `/root/root.txt`:
+
+![Root shell — full RCE via Jinja2 SSTI](<../.gitbook/assets/verbose_root_shell.png>)
 
 ```
 # Console Output
