@@ -137,7 +137,7 @@ Filtering responses by status code, a single `302 Found` redirect stands out —
 
 ![Caido — 302 redirect isolates code 6196](<../.gitbook/assets/verbose_ffuf_mfa_302_found.png>)
 
-> 💡 **Author's Note:** The MFA code `6196` is instance-specific — it will differ on each machine reset. The attack methodology (spray 0000–9999, filter for `302`) remains constant regardless of the target value.
+> 💡 **Note:** The MFA code `6196` is instance-specific — it will differ on each machine reset. The attack methodology (spray 0000–9999, filter for `302`) remains constant regardless of the target value.
 
 **Alternative — ffuf:** If a proxy intruder is unavailable, the same attack runs directly from the terminal. Pass `-t 3` to avoid overwhelming the server, and `-fc 200,500` to filter noise:
 
