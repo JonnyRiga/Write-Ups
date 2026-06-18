@@ -12,15 +12,6 @@
 
 ---
 
-| Field | Value |
-|---|---|
-| Target IP | `10.0.24.218` |
-| Hostname | `verbose.hsm` |
-| Operating System | Ubuntu Linux (OpenSSH 9.6p1 Ubuntu 3ubuntu13.14) |
-| Attacker IP | `10.200.65.67` (tun0) |
-
----
-
 ## Scenario
 
 ### Objective / Scope
