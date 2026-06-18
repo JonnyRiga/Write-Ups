@@ -44,7 +44,6 @@ Key findings:
 - **Domain:** `hack.smarter`
 - **Hostname:** `DC01.hack.smarter`
 - **OS:** Windows Server 2022 (Build 20348)
-- No MSSQL port exposed externally — worth checking for local-only listeners after initial access
 
 ### SMB — Null Session Enumeration
 
