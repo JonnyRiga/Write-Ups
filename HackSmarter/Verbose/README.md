@@ -97,9 +97,9 @@ student
 
 ### Broken Access Control — `/users/all`
 
-After authenticating as `Hacker1`, we proxy traffic through Burp Suite and inspect the Site Map. An API endpoint, `/users/all`, appears — it is called by the admin interface but is absent from the standard user UI.
+After authenticating as `Hacker1`, we proxy traffic through Caido and inspect the Site Map. An API endpoint, `/users/all`, appears — it is called by the admin interface but is absent from the standard user UI.
 
-![Burp Suite Site Map — /users/all API endpoint discovered](<../.gitbook/assets/verbose_burp_sitemap_users_all.png>)
+![Caido Site Map — /users/all API endpoint discovered](<../.gitbook/assets/verbose_burp_sitemap_users_all.png>)
 
 The developer assumed that hiding the admin panel link from low-privileged users was sufficient protection. This is **security through obscurity** — the endpoint performs no server-side authorisation check on the caller's role. Any authenticated session, including our `Hacker1` account, can reach it directly.
 
@@ -123,7 +123,7 @@ Submitting `admin`'s credentials hits a second factor: a 4-digit numeric OTP del
 
 The keyspace is exactly 10,000 combinations (0000–9999) and the endpoint imposes no rate limiting or lockout policy. We capture the MFA submission request to confirm the parameter name and session cookie structure:
 
-![Burp Suite — captured MFA submission request](<../.gitbook/assets/verbose_burp_admin_login_capture.png>)
+![Caido — captured MFA submission request](<../.gitbook/assets/verbose_burp_admin_login_capture.png>)
 
 We generate a zero-padded numeric wordlist and brute-force the `code=` parameter with `ffuf`, passing the `session` cookie obtained from the admin login step:
 
