@@ -7,7 +7,7 @@
 ---
 
 **Platform:** Hack Smarter Labs
-**Operating System:** Ubuntu Linux
+**Operating System:** Ubuntu Linux   
 **Topics:** Username Enumeration, Broken Access Control, Cleartext Credentials, MFA Brute-Force, SSTI (Jinja2), RCE
 
 ---
