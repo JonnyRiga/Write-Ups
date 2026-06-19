@@ -2,14 +2,13 @@
 
 ![](../.gitbook/assets/arasaka_cover.png)
 
-**Machine Write-Up — by jhaxx**
+**Machine Write-Up**
 
 ---
 
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Easy  
 **Operating System:** Windows Server 2022 Build 20348   
-**Topics:** Active Directory, BloodHound, Kerberoasting, GenericAll, GenericWrite, Targeted Kerberoasting, ADCS, ESC1, PKINIT, Pass-The-Hash
 
 ---
 
