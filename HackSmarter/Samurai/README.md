@@ -4,8 +4,6 @@
 
 ![](../.gitbook/assets/samurai_cover.png)
 
-**Machine Write-Up**
-
 ---
 
 **Platform:** Hack Smarter Labs  
