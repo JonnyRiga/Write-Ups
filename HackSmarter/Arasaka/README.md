@@ -12,9 +12,7 @@
 
 ---
 
-## Scenario
-
-### Objective / Scope
+## Objective / Scope
 
 Arasaka simulates an assumed breach engagement against a Windows Active Directory environment. Starting with valid standard-user credentials for `faraday`, the objective is to trace a realistic attack chain through misconfigured AD object permissions and an abusable ADCS certificate template, escalating from a low-privileged domain user to full Domain Administrator access.
 
