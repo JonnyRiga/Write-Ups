@@ -1,14 +1,10 @@
-`[BROKEN ACCESS CONTROL]` `[USERNAME ENUMERATION]` `[MFA BYPASS]` `[SSTI]` `[RCE]`
-
-# Verbose
-
 ![](<../.gitbook/assets/verbose_cover.png>)
 
 ---
 
 **Platform:** Hack Smarter Labs   
 **Operating System:** Ubuntu Linux   
-**Topics:** Username Enumeration, Broken Access Control, Cleartext Credentials, MFA Brute-Force, SSTI (Jinja2), RCE
+**Topics:** `[BROKEN ACCESS CONTROL]` `[USERNAME ENUMERATION]` `[MFA BYPASS]` `[SSTI]` `[RCE]`
 
 ---
 
