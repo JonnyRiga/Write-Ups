@@ -1,10 +1,12 @@
-# Anomaly
+`[JENKINS]` `[GROOVY SCRIPT RCE]` `[COMMAND INJECTION]` `[KERBEROS KEYTAB]` `[ADCS ESC1]` `[MACHINEACCOUNTQUOTA]` `[PASS-THE-HASH]` `[RDP RESTRICTED ADMIN]` 
+
+---
 
 ![](./screenshots/cover.png)
 
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
-**Topics:** Jenkins Default Credentials, Groovy Script Console RCE, Sudo Command Injection, Kerberos Keytab, ADCS ESC1, MachineAccountQuota, Pass-the-Hash, RDP Restricted Admin
+**Operating System:** Ubuntu Linex Server & Windows Active Directory
 
 ---
 
