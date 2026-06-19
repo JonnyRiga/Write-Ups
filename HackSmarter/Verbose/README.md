@@ -7,6 +7,7 @@
 ---
 
 **Platform:** Hack Smarter Labs   
+**Difficulty:** Easy   
 **Operating System:** Ubuntu Linux   
 
 ---
