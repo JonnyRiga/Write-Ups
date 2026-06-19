@@ -4,17 +4,13 @@
 
 ![](../.gitbook/assets/samurai_cover.png)
 
-**Machine Write-Up — by jhaxx**
+**Machine Write-Up**
 
 ---
 
-| Field | Value |
-|---|---|
-| Target IP | `10.1.4.149` |
-| Hostname | `samurai.hsm` |
-| Operating System | Ubuntu Linux (Apache 2.4.52) |
-| Difficulty | Easy |
-| Attacker IP | `10.200.53.155` (tun0) |
+**Platform:** Hack Smarter Labs  
+**Difficulty:** Easy  
+**Operating System:** Ubuntu Linux (Apache 2.4.52)
 
 ---
 
