@@ -6,7 +6,7 @@
 
 **Platform:** Hack Smarter Labs  
 **Difficulty:** Medium  
-**Operating System:** Ubuntu Linex Server & Windows Active Directory
+**Operating System:** Ubuntu Linux Server & Windows Active Directory
 
 ---
 
