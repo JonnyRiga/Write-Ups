@@ -2,7 +2,7 @@
 
 # Cicada
 
-![](../.gitbook/assets/cicada_cover.png)
+![](../.gitbook/assets/cicada_cover2.png)
 
 **Machine Write-Up — by jhaxx**
 
