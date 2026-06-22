@@ -1,6 +1,6 @@
 `[ACTIVE DIRECTORY]` `[BLOODHOUND]` `[LDAP]` `[RBCD]` `[REVERSE ENGINEERING]` `[SMB]` `[WINRM]`
 
-![](../.gitbook/assets/support_cover.png)
+![](../.gitbook/assets/support_cover2.png)
 
 **Machine Write-Up**
 
