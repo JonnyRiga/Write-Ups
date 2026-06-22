@@ -6,3 +6,4 @@ Write-ups for retired Hack The Box machines.
 |---------|------------|--------|
 | [Cicada](Cicada/README.md) | Easy | Active Directory, SMB, SeBackupPrivilege |
 | [TwoMillion](TwoMillion/README.md) | Easy | JS Deobfuscation, API Abuse, IDOR, Command Injection, CVE-2023-0386 |
+| [Support](Support/README.md) | Easy | Active Directory, SMB, LDAP, Reverse Engineering, BloodHound, RBCD |
