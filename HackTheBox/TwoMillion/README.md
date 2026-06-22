@@ -2,7 +2,7 @@
 
 ---
 
-![](../.gitbook/assets/twomillion_cover.png)
+![](../.gitbook/assets/twomillion_cover2.png)
 
 **Machine Write-Up — by jhaxx**
 
