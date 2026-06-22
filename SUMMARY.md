@@ -7,6 +7,7 @@
 * [Overview](HackTheBox/README.md)
 * [Cicada](HackTheBox/Cicada/README.md)
 * [TwoMillion](HackTheBox/TwoMillion/README.md)
+* [Support](HackTheBox/Support/README.md)
 
 ## Hack Smarter Labs
 
