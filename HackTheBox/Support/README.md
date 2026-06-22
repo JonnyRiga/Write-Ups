@@ -151,7 +151,7 @@ The verbose flag exposes the LDAP filter being constructed before the query fire
 
 With Wireshark listening on `tun0`, we re-run the same command. The binary performs a simple LDAP bind over an unencrypted connection, transmitting the service account password in plaintext:
 
-![Wireshark — LDAP bind request intercepted: user "ldap", simple authentication](../.gitbook/assets/support_wireshark_bind_request.png)
+![Running .exe and Wireshark together](../.gitbook/assets/support_wireshark_bind_request.png)
 
 ![Wireshark — LDAP bind packet details showing the authentication method and bind DN](../.gitbook/assets/support_wireshark_tcp_stream.png)
 
