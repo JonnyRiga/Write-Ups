@@ -1,6 +1,6 @@
 # Write-Ups
 
-![](./assets/header.png)
+![](./assets/header1.png)
 
 Hi, I'm Jhaxx.
 
