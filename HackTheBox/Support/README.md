@@ -6,8 +6,8 @@
 
 ---
 
-**Platform:** HackTheBox
-**Difficulty:** Easy
+**Platform:** HackTheBox    
+**Difficulty:** Easy   
 **Operating System:** Windows Server 2022 Build 20348
 
 ---
