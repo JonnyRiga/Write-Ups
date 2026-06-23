@@ -166,6 +166,34 @@ ldap:<PASSWORD REDACTED>
 
 The `ldap` service account authenticates using LDAP simple bind with no transport security — any observer on the path between the client and the DC sees the password verbatim. This is the root cause: the application neither uses Kerberos nor enforces LDAPS.
 
+### Alternative — Credential Extraction via Static Analysis (DNSpy)
+
+The Wireshark approach requires Linux and live traffic capture. On Windows, the same credential is recoverable entirely offline by decompiling the assembly in DNSpy.
+
+Opening `UserInfo.exe` in DNSpy and navigating to the `LdapQuery` module reveals the authentication call:
+
+![DNSpy — UserInfo.exe loaded, LdapQuery module visible in the assembly tree](../.gitbook/assets/support_dnspy_overview.png)
+
+![DNSpy — LdapQuery module: `string password = Protected.getPassword()` call identified](../.gitbook/assets/support_dnspy_ldapquery.png)
+
+The `getPassword()` call delegates to a `Protected` class. Navigating there exposes the full decryption routine:
+
+![DNSpy — Protected module: enc_password, XOR key armando, and XOR 223 visible in IL](../.gitbook/assets/support_dnspy_protected.png)
+
+The logic is a three-step decode:
+
+1. `enc_password` = `0Nv32PTwgYjzg9/8j5TbmvPd3e7WhtWWyuPsyO76/Y+U193E` — Base64-encoded ciphertext
+2. `FromBase64String` → decode to raw bytes
+3. XOR each byte with the repeating key `armando` (UTF-8), then XOR each result with decimal `223`
+
+CyberChef reproduces this in three chained operations — From Base64 → XOR `armando` (UTF8, Standard) → XOR `223` (Decimal, Standard) — and outputs the plaintext credential:
+
+![CyberChef — three-step decode (Base64 → XOR armando → XOR 223) revealing the ldap password](../.gitbook/assets/support_dnspy_cyberchef.png)
+
+Both methods arrive at the same `ldap` service account password. The static analysis path is notable because it requires no network access and works against any copy of the binary in isolation.
+
+---
+
 ### Authenticated Enumeration
 
 With valid credentials we expand our enumeration surface. First, generate `/etc/hosts` entries:
