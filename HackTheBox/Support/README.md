@@ -172,7 +172,7 @@ The Wireshark approach requires Linux and live traffic capture. On Windows, the 
 
 Opening `UserInfo.exe` in DNSpy and navigating to the `LdapQuery` module reveals the authentication call:
 
-![DNSpy — UserInfo.exe loaded, LdapQuery module visible in the assembly tree](../.gitbook/assets/support_dnspy_overview.png)
+![DNSpy — UserInfo.exe loaded, LdapQuery module visible in the assembly tree](../.gitbook/assets/support_dnspy_overview2.png)
 
 ![DNSpy — LdapQuery module: `string password = Protected.getPassword()` call identified](../.gitbook/assets/support_dnspy_ldapquery.png)
 
