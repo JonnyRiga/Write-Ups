@@ -1,26 +1,18 @@
 `[AD]` `[SMB]` `[RID-BRUTE]` `[PASSWORD-SPRAY]` `[BLOODHOUND]` `[ADCS]` `[SEBACKUPPRIVILEGE]` `[PASS-THE-HASH]` `[OSCP]`
 
-# Cicada
-
 ![](../.gitbook/assets/cicada_cover.png)
 
-**Machine Write-Up — by jhaxx**
+**Machine Write-Up**
 
 ---
 
-| Field | Value |
-|---|---|
-| Target IP | `<DC_IP>` |
-| Hostname | `CICADA-DC.cicada.htb` |
-| Operating System | Windows Server 2022 Build 20348 |
-| Difficulty | Easy |
-| Attacker IP | `<ATTACKER_IP>` (tun0) |
+**Platform:** HackTheBox
+**Difficulty:** Easy
+**Operating System:** Windows Server 2022 Build 20348
 
 ---
 
-## Scenario
-
-### Objective / Scope
+## Objective / Scope
 
 The target is `cicada.htb` (`CICADA-DC.cicada.htb`), a Windows Server 2022 Domain Controller for the `cicada.htb` Active Directory domain. The scope covers all network-exposed services, with the goal of achieving full domain compromise — user and root flags.
 
