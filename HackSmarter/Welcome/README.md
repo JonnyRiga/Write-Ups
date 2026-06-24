@@ -223,11 +223,6 @@ The first flag sits on the `a.harris` desktop:
 
 ![User flag retrieved from the a.harris desktop](<../.gitbook/assets/welcome_user_flag.png>)
 
-```
-# Console Output
-<FLAG REDACTED>
-```
-
 ---
 
 ## Lateral Movement
@@ -425,11 +420,6 @@ welcome\administrator
 The domain is fully compromised, and the root flag is retrieved from the `Administrator` desktop:
 
 ![Domain compromised — root flag retrieved as welcome\administrator](<../.gitbook/assets/welcome_root_flag.png>)
-
-```
-# Console Output
-<FLAG REDACTED>
-```
 
 ---
 
