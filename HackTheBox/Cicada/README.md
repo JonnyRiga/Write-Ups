@@ -12,9 +12,9 @@
 
 ---
 
-## Objective / Scope
+## Machine Info
 
-The target is `cicada.htb` (`CICADA-DC.cicada.htb`), a Windows Server 2022 Domain Controller for the `cicada.htb` Active Directory domain. The scope covers all network-exposed services, with the goal of achieving full domain compromise — user and root flags.
+Cicada is an easy-difficult Windows machine that focuses on beginner Active Directory enumeration and exploitation. In this machine, players will enumerate the domain, identify users, navigate shares, uncover plaintext passwords stored in files, execute a password spray, and use the SeBackupPrivilege to achieve full system compromise.
 
 ---
 
