@@ -14,3 +14,4 @@ OSCP-aligned penetration testing labs from [Hack Smarter Security](https://hacks
 | [Samurai](./Samurai/) | Easy | CVE-2023-23752, Joomla Information Disclosure, Webshell, Sliver C2, Sudo Command Injection |
 | [Arasaka](./Arasaka/) | Medium | Kerberoasting, GenericAll, GenericWrite, Targeted Kerberoasting, ADCS ESC1, PKINIT, Pass-the-Hash |
 | [Verbose](./Verbose/) | Easy | Username Enumeration, Broken Access Control, MFA Brute-Force, SSTI (Jinja2), RCE |
+| [Welcome](./Welcome/) | Easy | AD Enumeration, PDF Hash Cracking, Password Spraying, GenericAll, ForceChangePassword, ADCS ESC1, Pass-the-Hash |
