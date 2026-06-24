@@ -18,7 +18,13 @@
 
 ### Objective / Scope
 
-Welcome simulates an assumed-breach Active Directory engagement. As a member of the Hack Smarter Red Team, a phishing campaign has already yielded a single set of low-privileged domain credentials. The objective is to enumerate the domain from that foothold, chain a series of misconfigurations and excessive rights, and demonstrate full impact by compromising the `Administrator` account on the domain controller.
+You are a member of the Hack Smarter Red Team. During a phishing engagement, you were able to retrieve credentials for the client's Active Directory environment. Use these credentials to enumerate the environment, elevate your privileges, and demonstrate impact for the client.
+
+### Starting Credentials
+
+```
+e.hills:Il0vemyj0b2025!
+```
 
 ---
 
@@ -76,7 +82,7 @@ The port profile is textbook domain controller: Kerberos (88), LDAP/LDAPS (389/6
 Using the phished credentials, we enumerate shares with NetExec. Beyond the default administrative and SYSVOL/NETLOGON shares, a non-standard `Human Resources` share is readable:
 
 ```bash
-nxc smb welcome.local -u 'e.hills' -p '<PASSWORD REDACTED>' --shares
+nxc smb welcome.local -u 'e.hills' -p 'Il0vemyj0b2025!' --shares
 ```
 
 ```
@@ -155,7 +161,7 @@ The document password falls in seconds. Opening the guide reveals the payload th
 Before spraying, we need the full list of accounts to test. NetExec pulls domain users over SMB:
 
 ```bash
-nxc smb welcome.local -u 'e.hills' -p '<PASSWORD REDACTED>' --users
+nxc smb welcome.local -u 'e.hills' -p 'Il0vemyj0b2025!' --users
 ```
 
 ```
@@ -181,7 +187,7 @@ We strip the three built-in accounts (`Administrator`, `Guest`, `krbtgt`) and sa
 A password spray tests one password against many accounts — the inverse of a brute force — which keeps the bad-password count per account low. Even so, the responsible first step is to confirm the domain's lockout policy so we don't disable any accounts:
 
 ```bash
-nxc smb welcome.local -u 'e.hills' -p '<PASSWORD REDACTED>' --pass-pol
+nxc smb welcome.local -u 'e.hills' -p 'Il0vemyj0b2025!' --pass-pol
 ```
 
 ```
