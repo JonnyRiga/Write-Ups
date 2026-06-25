@@ -15,3 +15,4 @@ OSCP-aligned penetration testing labs from [Hack Smarter Security](https://hacks
 | [Arasaka](./Arasaka/) | Medium | Kerberoasting, GenericAll, GenericWrite, Targeted Kerberoasting, ADCS ESC1, PKINIT, Pass-the-Hash |
 | [Verbose](./Verbose/) | Easy | Username Enumeration, Broken Access Control, MFA Brute-Force, SSTI (Jinja2), RCE |
 | [Welcome](./Welcome/) | Easy | AD Enumeration, PDF Hash Cracking, Password Spraying, GenericAll, ForceChangePassword, ADCS ESC1, Pass-the-Hash |
+| [Talisman](./Talisman/) | Medium | Oracle DB, CREATE ANY DIRECTORY, DBMS_XSLPROCESSOR File Read, SSH Key Theft, Sudo Abuse |
