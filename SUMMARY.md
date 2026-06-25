@@ -21,3 +21,4 @@
 * [Arasaka](HackSmarter/Arasaka/README.md)
 * [Verbose](HackSmarter/Verbose/README.md)
 * [Welcome](HackSmarter/Welcome/README.md)
+* [Talisman](HackSmarter/Talisman/README.md)
