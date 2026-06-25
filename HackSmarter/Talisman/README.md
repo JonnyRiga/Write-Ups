@@ -7,6 +7,7 @@
 ---
 
 **Platform:** HackSmarter   
+**Difficulty:** Medium   
 **Operating System:** Oracle Linux 8 (OpenSSH 8.0)
 
 ---
